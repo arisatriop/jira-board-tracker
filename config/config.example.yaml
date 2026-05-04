@@ -1,8 +1,8 @@
 app:
   env: dev
-  name: Goilerplate
+  name: project-tracker
   version: 1.0.0
-  description: This is a sample application configuration file.
+  description: Internal tool for monitoring Jira boards, sprint progress, and remaining work.
 
 grpc:
   enabled: true

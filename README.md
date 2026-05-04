@@ -1,45 +1,36 @@
-# 🚀 Goilerplate
+# Project Tracker
 
-**Production-ready Go backend boilerplate** with authentication, authorization, and best practices built-in.
+**Internal tool for monitoring Jira boards, sprint progress, and remaining work.**
 
-A clean, scalable REST API template featuring JWT authentication, role-based access control (RBAC), Redis caching, and clean architecture patterns — with built-in gRPC support.
-
-> 📚 **[→ View Full Documentation](./docs/README.md)** — Installation, deployment, architecture, and development guides
+A server-rendered web dashboard that gives your team a real-time view of active sprints, ticket breakdowns, and who still has open work — all in one place, without leaving your browser.
 
 ---
 
-## ✨ Key Features
+## Features
 
-- **🔐 Authentication & Authorization** — JWT tokens, RBAC, multi-device sessions
-- **🏗️ Clean Architecture** — Layered structure with clear separation of concerns
-- **⚡ Performance** — Redis caching, connection pooling, optimized queries
-- **📦 Database Agnostic** — PostgreSQL or MySQL support
-- **📡 gRPC Support** — Proto-first gRPC server with buf toolchain, AIP conventions, and reflection
-- **🔭 Observability** — OpenTelemetry distributed tracing across HTTP, gRPC, and DB layers
-- **☁️ Cloud Ready** — S3, Google Drive, Kubernetes deployment
-- **🧪 Quality First** — Type-safe code, comprehensive validation, error handling
+- **Boards overview** — All Jira boards in one page with sprint status badges (active / overdue / no sprint) and done/total progress bars
+- **Board summary modal** — Click any board to see sprint details, status/type breakdown, remaining work card, and assignee stats with tooltip
+- **Remaining work page** — Full ticket list for a board's active sprint, filtered to undone only, with expandable sub-task rows
+- **Client-side filters** — Search by key or summary, filter by status / type / assignee
+- **Sprint timeline detection** — Boards marked overdue when sprint end date has passed
+- **Internal API** — JSON endpoints under `/internal/jira/*` for programmatic access
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Go 1.24** — Modern Go with generics
-- **Fiber v2** — Fast HTTP framework
-- **gRPC** — Proto-first RPC with buf toolchain and Google AIP conventions
-- **GORM** — Type-safe ORM
-- **PostgreSQL/MySQL** — Relational database
-- **Redis** — Caching & sessions
-- **JWT** — Stateless authentication
-- **OpenTelemetry** — Distributed tracing via OTLP/gRPC
+- **Go 1.24** + **Fiber v2** — HTTP server and server-side HTML rendering
+- **Tailwind CSS** (CDN) — Styling
+- **Jira Agile REST API** — Read-only (`GET` only)
 
 ---
 
-## 🚀 Quick Start (5 minutes)
+## Quick Start
 
 ### Prerequisites
 - Go 1.24+
-- PostgreSQL or MySQL
-- Redis (optional)
+- PostgreSQL
+- A Jira Cloud account with an API token
 
 ### Setup
 
@@ -51,7 +42,7 @@ go mod download
 
 # 2. Configure
 cp config/config.example.yaml config/config.yaml
-# Edit config/config.yaml with your database credentials
+# Edit config/config.yaml — fill in DB credentials and Jira section
 
 # 3. Create database
 createdb project-tracker
@@ -65,52 +56,32 @@ go run cmd/server/main.go
 
 Server runs at `http://localhost:3000`
 
-**→ [Full setup guide](./docs/README.md)**
+### Jira Configuration
+
+In `config/config.yaml`:
+
+```yaml
+jira:
+  base_url: https://<your-domain>.atlassian.net
+  email: <your-email>
+  api_token: <your-api-token>  # Atlassian API token (not your password)
+```
+
+Generate an API token at: **Atlassian Account Settings → Security → API tokens**
 
 ---
 
-## 📖 Documentation
+## Routes
 
-All detailed documentation is in the [`/docs`](./docs/README.md) folder:
-
-- **[Getting Started](./docs/getting-started/)** — Installation, Docker, development setup
-- **[Guides](./docs/guides/)** — CRUD operations, clean architecture
-- **[Deployment](./docs/deployment/)** — Kubernetes, CI/CD, configuration
-- **[API Reference](./docs/api/)** — Routes, authentication, permissions
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit with [conventional commits](https://www.conventionalcommits.org/)
-4. Push and open a Pull Request
-
-**Commit convention:**
-- `feat:` — New feature
-- `fix:` — Bug fix
-- `docs:` — Documentation
-- `refactor:` — Code refactoring
-- `test:` — Tests
-- `chore:` — Maintenance
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/jira/boards` | Boards overview page |
+| `GET` | `/jira/boards/:id/remaining` | Remaining work detail page |
+| `GET` | `/internal/jira/boards` | JSON — list all boards |
+| `GET` | `/internal/jira/boards/:id/summary` | JSON — board summary |
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
-
----
-
-## 📧 Support
-
-- **Questions?** Open an [issue on GitHub](https://github.com/arisatriop/project-tracker/issues)
-- **Full docs:** See [`/docs`](./docs/README.md)
-- **Examples:** Check example requests in the documentation
-
----
-
-Made with ❤️ using Go — Star ⭐ this repo if you find it useful!
+MIT
