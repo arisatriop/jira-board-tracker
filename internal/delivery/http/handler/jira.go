@@ -504,6 +504,93 @@ var boardsTemplate = `<!DOCTYPE html>
         html += '</div></div>';
       }
 
+      // Remaining work breakdown (undone tasks only)
+      const allIssues = data.issues || [];
+      const undone = allIssues.filter(function(i) {
+        return i.fields.status.statusCategory.key !== 'done';
+      });
+
+      if (allIssues.length > 0) {
+        const undoneByStatus = {};
+        const undoneByType = {};
+        const undoneAssigneeMap = {};
+
+        undone.forEach(function(i) {
+          const sName = i.fields.status.name;
+          undoneByStatus[sName] = (undoneByStatus[sName] || 0) + 1;
+          const tName = (i.fields.issuetype && i.fields.issuetype.name) || 'Unknown';
+          undoneByType[tName] = (undoneByType[tName] || 0) + 1;
+          if (i.fields.assignee) {
+            const name = i.fields.assignee.displayName;
+            if (!undoneAssigneeMap[name]) {
+              let av = '';
+              if (i.fields.assignee.avatarUrls && i.fields.assignee.avatarUrls['32x32']) {
+                av = i.fields.assignee.avatarUrls['32x32'];
+              }
+              undoneAssigneeMap[name] = { display_name: name, avatar_url: av, count: 0 };
+            }
+            undoneAssigneeMap[name].count++;
+          }
+        });
+
+        const statusColor = function(s) {
+          return ({
+            'In Progress': 'bg-blue-100 text-blue-700',
+            'In Review':   'bg-yellow-100 text-yellow-700',
+            'To Do':       'bg-gray-100 text-gray-600',
+          }[s] || 'bg-gray-100 text-gray-500');
+        };
+        const typeColor = function(t) {
+          return ({
+            'Bug':      'bg-red-50 text-red-600 border-red-200',
+            'Story':    'bg-purple-50 text-purple-600 border-purple-200',
+            'Task':     'bg-blue-50 text-blue-600 border-blue-200',
+            'Epic':     'bg-orange-50 text-orange-600 border-orange-200',
+            'Sub-task': 'bg-gray-50 text-gray-600 border-gray-200',
+          }[t] || 'bg-gray-50 text-gray-500 border-gray-200');
+        };
+
+        let statusPills = '';
+        for (const entry of Object.entries(undoneByStatus)) {
+          statusPills += '<span class="text-xs font-medium px-2.5 py-1 rounded-full ' + statusColor(entry[0]) + '">' + esc(entry[0]) + ': ' + entry[1] + '</span>';
+        }
+        let typePills = '';
+        for (const entry of Object.entries(undoneByType)) {
+          typePills += '<span class="text-xs font-medium px-2.5 py-1 rounded-full border ' + typeColor(entry[0]) + '">' + esc(entry[0]) + ': ' + entry[1] + '</span>';
+        }
+
+        html += '<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">'
+          + '<div class="flex items-center justify-between">'
+          + '<p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Remaining Work</p>'
+          + '<span class="text-sm font-bold text-amber-700">' + undone.length + ' <span class="font-normal text-amber-500 text-xs">of ' + allIssues.length + ' shown</span></span>'
+          + '</div>';
+        if (statusPills) {
+          html += '<div><p class="text-xs text-amber-600 font-medium mb-1.5">By Status</p><div class="flex flex-wrap gap-1.5">' + statusPills + '</div></div>';
+        }
+        if (typePills) {
+          html += '<div><p class="text-xs text-amber-600 font-medium mb-1.5">By Type</p><div class="flex flex-wrap gap-1.5">' + typePills + '</div></div>';
+        }
+
+        // Assignee breakdown inside the amber card
+        const undoneAssignees = Object.values(undoneAssigneeMap).sort(function(a, b) { return b.count - a.count; });
+        if (undoneAssignees.length > 0) {
+          html += '<div><p class="text-xs text-amber-600 font-medium mb-1.5">By Assignee</p><div class="space-y-2">';
+          undoneAssignees.forEach(function(a) {
+            const initials = a.display_name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+            const avatar = a.avatar_url
+              ? '<img src="' + esc(a.avatar_url) + '" class="w-7 h-7 rounded-full object-cover" />'
+              : '<div class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">' + initials + '</div>';
+            html += '<div class="flex items-center gap-3">' + avatar
+              + '<span class="text-sm text-gray-700 flex-1">' + esc(a.display_name) + '</span>'
+              + '<span class="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">' + a.count + '</span>'
+              + '</div>';
+          });
+          html += '</div></div>';
+        }
+
+        html += '</div>';
+      }
+
       // Issues list
       if (data.issues && data.issues.length > 0) {
         const priorityColor = p => ({ 'Highest': 'text-red-600', 'High': 'text-orange-500', 'Medium': 'text-yellow-500', 'Low': 'text-blue-400', 'Lowest': 'text-gray-400' }[p] || 'text-gray-400');
