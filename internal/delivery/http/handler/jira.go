@@ -669,12 +669,18 @@ var boardsTemplate = `<!DOCTYPE html>
 </body>
 </html>`
 
+type issueNode struct {
+	Issue    jira.Issue
+	Children []jira.Issue
+}
+
 func (h *Jira) RemainingView(ctx *fiber.Ctx) error {
 	type viewData struct {
 		Board       jira.Board
 		Sprint      *jira.Sprint
 		SprintStats jira.SprintStats
-		Issues      []jira.Issue
+		Nodes       []issueNode
+		Total       int
 		TotalSprint int
 		HasMore     bool
 		Error       string
@@ -698,10 +704,29 @@ func (h *Jira) RemainingView(ctx *fiber.Ctx) error {
 				data.SprintStats = summary.SprintStats
 				data.TotalSprint = summary.TotalIssues
 				data.HasMore = summary.TotalIssues > len(summary.Issues)
+
+				// collect undone issues
+				var remaining []jira.Issue
 				for _, issue := range summary.Issues {
 					if issue.Fields.Status.StatusCategory.Key != "done" {
-						data.Issues = append(data.Issues, issue)
+						remaining = append(remaining, issue)
 					}
+				}
+				data.Total = len(remaining)
+
+				// all issues are top-level; attach matching undone children beneath parents
+				issueMap := make(map[string]jira.Issue, len(remaining))
+				for _, issue := range remaining {
+					issueMap[issue.Key] = issue
+				}
+				for _, issue := range remaining {
+					node := issueNode{Issue: issue}
+					for _, sub := range issue.Fields.Subtasks {
+						if child, ok := issueMap[sub.Key]; ok {
+							node.Children = append(node.Children, child)
+						}
+					}
+					data.Nodes = append(data.Nodes, node)
 				}
 			}
 		}
@@ -811,7 +836,7 @@ var remainingTemplate = `<!DOCTYPE html>
       <p class="text-sm text-gray-500 mt-0.5">Remaining work</p>
     </div>
     <div class="text-right flex-shrink-0">
-      <p class="text-3xl font-bold text-amber-600">{{len .Issues}}</p>
+      <p class="text-3xl font-bold text-amber-600">{{.Total}}</p>
       <p class="text-sm text-gray-400">remaining tickets</p>
     </div>
   </div>
@@ -854,7 +879,7 @@ var remainingTemplate = `<!DOCTYPE html>
   </div>
   {{end}}
 
-  {{if .Issues}}
+  {{if .Nodes}}
   <!-- Filter bar -->
   <div class="flex flex-col sm:flex-row gap-3 mb-3">
     <div class="relative flex-1">
@@ -875,30 +900,74 @@ var remainingTemplate = `<!DOCTYPE html>
       <option value="">All Assignees</option>
     </select>
   </div>
-  <p id="ticket-count" class="text-sm text-gray-500 mb-3">{{len .Issues}} ticket{{if gt (len .Issues) 1}}s{{end}} remaining</p>
+  <p id="ticket-count" class="text-sm text-gray-500 mb-3">{{.Total}} ticket{{if gt .Total 1}}s{{end}} remaining</p>
 
   <!-- Ticket list -->
   <div id="ticket-list" class="space-y-1.5">
-    {{range .Issues}}
-    <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all"
-         data-status="{{.Fields.Status.Name}}"
-         data-type="{{.Fields.IssueType.Name}}"
-         data-assignee="{{if .Fields.Assignee}}{{.Fields.Assignee.DisplayName}}{{else}}Unassigned{{end}}"
-         data-key="{{.Key}}"
-         data-summary="{{.Fields.Summary}}">
-      <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {{statusDotClass .Fields.Status.Name}}"></span>
-      <span class="text-xs font-mono font-semibold text-blue-600 w-28 flex-shrink-0">{{.Key}}</span>
-      {{if .Fields.IssueType.Name}}
-      <span class="text-xs font-medium px-2 py-0.5 rounded-full border flex-shrink-0 {{typeBadgeClass .Fields.IssueType.Name}}">{{.Fields.IssueType.Name}}</span>
+    {{range .Nodes}}
+    <div data-node
+         data-status="{{.Issue.Fields.Status.Name}}"
+         data-type="{{.Issue.Fields.IssueType.Name}}"
+         data-assignee="{{if .Issue.Fields.Assignee}}{{.Issue.Fields.Assignee.DisplayName}}{{else}}Unassigned{{end}}"
+         data-key="{{.Issue.Key}}"
+         data-summary="{{.Issue.Fields.Summary}}">
+
+      <!-- Parent row -->
+      <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all {{if .Children}}cursor-pointer{{end}}"
+           {{if .Children}}onclick="toggleChildren('{{.Issue.Key}}')"{{end}}>
+        {{if .Children}}
+        <svg id="chevron-{{.Issue.Key}}" class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        {{else}}
+        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {{statusDotClass .Issue.Fields.Status.Name}}"></span>
+        {{end}}
+        <span class="text-xs font-mono font-semibold text-blue-600 w-28 flex-shrink-0">{{.Issue.Key}}</span>
+        {{if .Issue.Fields.IssueType.Name}}
+        <span class="text-xs font-medium px-2 py-0.5 rounded-full border flex-shrink-0 {{typeBadgeClass .Issue.Fields.IssueType.Name}}">{{.Issue.Fields.IssueType.Name}}</span>
+        {{end}}
+        <span class="text-sm text-gray-800 flex-1 min-w-0">{{.Issue.Fields.Summary}}</span>
+        {{if .Children}}
+        <span class="text-xs text-gray-400 flex-shrink-0 bg-gray-100 px-2 py-0.5 rounded-full">{{len .Children}} sub-task{{if gt (len .Children) 1}}s{{end}}</span>
+        {{end}}
+        <span class="text-xs text-gray-500 flex-shrink-0 w-36 text-right truncate">
+          {{if .Issue.Fields.Assignee}}{{.Issue.Fields.Assignee.DisplayName}}{{else}}<span class="text-gray-300">Unassigned</span>{{end}}
+        </span>
+        {{if .Issue.Fields.Priority}}
+        <span class="text-xs font-medium flex-shrink-0 w-16 text-right {{priorityClass .Issue.Fields.Priority.Name}}">{{.Issue.Fields.Priority.Name}}</span>
+        {{end}}
+        <span class="text-xs text-gray-400 flex-shrink-0 w-28 text-right">{{.Issue.Fields.Status.Name}}</span>
+      </div>
+
+      <!-- Children (hidden by default) -->
+      {{if .Children}}
+      <div id="children-{{.Issue.Key}}" class="hidden ml-8 mt-1 space-y-1">
+        {{range .Children}}
+        <div class="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+             data-child
+             data-status="{{.Fields.Status.Name}}"
+             data-type="{{.Fields.IssueType.Name}}"
+             data-assignee="{{if .Fields.Assignee}}{{.Fields.Assignee.DisplayName}}{{else}}Unassigned{{end}}"
+             data-key="{{.Key}}"
+             data-summary="{{.Fields.Summary}}">
+          <span class="w-2 h-2 rounded-full flex-shrink-0 {{statusDotClass .Fields.Status.Name}}"></span>
+          <span class="text-xs font-mono font-semibold text-blue-500 w-28 flex-shrink-0">{{.Key}}</span>
+          {{if .Fields.IssueType.Name}}
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full border flex-shrink-0 {{typeBadgeClass .Fields.IssueType.Name}}">{{.Fields.IssueType.Name}}</span>
+          {{end}}
+          <span class="text-sm text-gray-700 flex-1 min-w-0">{{.Fields.Summary}}</span>
+          <span class="text-xs text-gray-400 flex-shrink-0 w-36 text-right truncate">
+            {{if .Fields.Assignee}}{{.Fields.Assignee.DisplayName}}{{else}}<span class="text-gray-300">Unassigned</span>{{end}}
+          </span>
+          {{if .Fields.Priority}}
+          <span class="text-xs font-medium flex-shrink-0 w-16 text-right {{priorityClass .Fields.Priority.Name}}">{{.Fields.Priority.Name}}</span>
+          {{end}}
+          <span class="text-xs text-gray-400 flex-shrink-0 w-28 text-right">{{.Fields.Status.Name}}</span>
+        </div>
+        {{end}}
+      </div>
       {{end}}
-      <span class="text-sm text-gray-800 flex-1 min-w-0">{{.Fields.Summary}}</span>
-      <span class="text-xs text-gray-500 flex-shrink-0 w-36 text-right truncate">
-        {{if .Fields.Assignee}}{{.Fields.Assignee.DisplayName}}{{else}}<span class="text-gray-300">Unassigned</span>{{end}}
-      </span>
-      {{if .Fields.Priority}}
-      <span class="text-xs font-medium flex-shrink-0 w-16 text-right {{priorityClass .Fields.Priority.Name}}">{{.Fields.Priority.Name}}</span>
-      {{end}}
-      <span class="text-xs text-gray-400 flex-shrink-0 w-28 text-right">{{.Fields.Status.Name}}</span>
+
     </div>
     {{end}}
   </div>
@@ -918,11 +987,10 @@ var remainingTemplate = `<!DOCTYPE html>
 
 <script>
   (function() {
-    const rows = document.querySelectorAll('#ticket-list [data-status]');
     const statuses = new Set(), types = new Set(), assignees = new Set();
-    rows.forEach(function(r) {
-      if (r.dataset.status) statuses.add(r.dataset.status);
-      if (r.dataset.type)   types.add(r.dataset.type);
+    document.querySelectorAll('#ticket-list [data-node]').forEach(function(r) {
+      if (r.dataset.status)   statuses.add(r.dataset.status);
+      if (r.dataset.type)     types.add(r.dataset.type);
       if (r.dataset.assignee) assignees.add(r.dataset.assignee);
     });
     function populate(id, values) {
@@ -939,20 +1007,27 @@ var remainingTemplate = `<!DOCTYPE html>
     populate('filter-assignee', assignees);
   })();
 
+  function toggleChildren(key) {
+    const children = document.getElementById('children-' + key);
+    const chevron  = document.getElementById('chevron-' + key);
+    const open = children.classList.toggle('hidden') === false;
+    if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : '';
+  }
+
   function applyFilters() {
     const q        = (document.getElementById('search-input').value || '').toLowerCase().trim();
     const status   = document.getElementById('filter-status').value;
     const type     = document.getElementById('filter-type').value;
     const assignee = document.getElementById('filter-assignee').value;
-    const rows = document.querySelectorAll('#ticket-list [data-status]');
+    const nodes = document.querySelectorAll('#ticket-list [data-node]');
     let visible = 0;
-    rows.forEach(function(row) {
-      const matchSearch   = !q || (row.dataset.key + ' ' + row.dataset.summary).toLowerCase().includes(q);
-      const matchStatus   = !status   || row.dataset.status   === status;
-      const matchType     = !type     || row.dataset.type     === type;
-      const matchAssignee = !assignee || row.dataset.assignee === assignee;
+    nodes.forEach(function(node) {
+      const matchSearch   = !q      || (node.dataset.key + ' ' + node.dataset.summary).toLowerCase().includes(q);
+      const matchStatus   = !status   || node.dataset.status   === status;
+      const matchType     = !type     || node.dataset.type     === type;
+      const matchAssignee = !assignee || node.dataset.assignee === assignee;
       const show = matchSearch && matchStatus && matchType && matchAssignee;
-      row.style.display = show ? '' : 'none';
+      node.style.display = show ? '' : 'none';
       if (show) visible++;
     });
     const el = document.getElementById('ticket-count');

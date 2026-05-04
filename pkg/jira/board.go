@@ -40,12 +40,25 @@ type Issue struct {
 	Fields IssueFields `json:"fields"`
 }
 
+type SubtaskRef struct {
+	ID     string `json:"id"`
+	Key    string `json:"key"`
+	Fields struct {
+		Summary   string      `json:"summary"`
+		Status    IssueStatus `json:"status"`
+		Assignee  *Assignee   `json:"assignee"`
+		Priority  *Priority   `json:"priority"`
+		IssueType IssueType   `json:"issuetype"`
+	} `json:"fields"`
+}
+
 type IssueFields struct {
-	Summary   string      `json:"summary"`
-	Status    IssueStatus `json:"status"`
-	Assignee  *Assignee   `json:"assignee"`
-	Priority  *Priority   `json:"priority"`
-	IssueType IssueType   `json:"issuetype"`
+	Summary   string       `json:"summary"`
+	Status    IssueStatus  `json:"status"`
+	Assignee  *Assignee    `json:"assignee"`
+	Priority  *Priority    `json:"priority"`
+	IssueType IssueType    `json:"issuetype"`
+	Subtasks  []SubtaskRef `json:"subtasks"`
 }
 
 type IssueStatus struct {
