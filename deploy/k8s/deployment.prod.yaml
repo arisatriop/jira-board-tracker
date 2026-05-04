@@ -1,0 +1,190 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-tracker
+  namespace: apps          # ← FIXED: konsisten dengan Service & Ingress
+  labels:
+    app: project-tracker
+    environment: production
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: project-tracker
+  template:
+    metadata:
+      labels:
+        app: project-tracker
+        version: "${COMMIT_SHA}"
+    spec:
+      serviceAccountName: project-tracker
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+        args:
+          - "--port=5432"
+          - "--private-ip"
+          - "${CLOUD_SQL_INSTANCE}"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65532
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+      - name: app
+        image: ${IMAGE}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+
+        envFrom:
+        - secretRef:
+            name: project-tracker-secret
+
+        startupProbe:           # ← ADDED: cegah liveness kill pod saat init
+          httpGet:
+            path: /health
+            port: 3000
+          failureThreshold: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 400m
+            memory: 512Mi
+
+      volumes:
+      - name: config-volume
+        configMap:
+          name: project-tracker-config
+          items:
+          - key: config.yaml
+            path: config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-tracker-service
+  namespace: apps
+  labels:
+    app: project-tracker
+    api-group: public
+spec:
+  selector:
+    app: project-tracker
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+    name: http
+  type: ClusterIP
+---
+# Ingress for public APIs
+# Routes: /api/*, /partner/*
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: project-tracker-ingress
+  namespace: apps
+  labels:
+    app: project-tracker
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    # Optional: force HTTPS redirect
+    # networking.gke.io/managed-certificates: "project-tracker-cert"
+    # kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: project-tracker.sidejob.fun
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: project-tracker-service
+            port:
+              number: 80
+      - path: /partner
+        pathType: Prefix
+        backend:
+          service:
+            name: project-tracker-service
+            port:
+              number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: project-tracker-hpa
+  namespace: apps
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: project-tracker
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
