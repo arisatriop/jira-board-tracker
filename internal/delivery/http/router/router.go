@@ -127,6 +127,7 @@ func (r *RouteRegistry) Register() {
 	http.Get("/health", r.health)
 	http.Get("/healthcheck", r.healthCheck)
 	http.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+	http.Get("/jira/boards", r.Wired.Handlers.Jira.BoardsView)
 
 	if strings.ToLower(r.App.Config.App.Env) != "production" {
 		http.Static("/swagger-ui", ".swagger")

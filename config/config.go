@@ -20,6 +20,13 @@ type Config struct {
 	Crypto     Crypto             `mapstructure:"crypto"`
 	Apikeys    map[string]string  `mapstructure:"api_key"`
 	Services   map[string]Service `mapstructure:"service"`
+	Jira       Jira               `mapstructure:"jira"`
+}
+
+type Jira struct {
+	BaseURL  string `mapstructure:"base_url"`
+	Email    string `mapstructure:"email"`
+	APIToken string `mapstructure:"api_token"`
 }
 
 type RateLimit struct {

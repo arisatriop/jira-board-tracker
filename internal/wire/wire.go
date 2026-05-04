@@ -2,6 +2,7 @@ package wire
 
 import (
 	"project-tracker/internal/bootstrap"
+	"project-tracker/pkg/jira"
 )
 
 // ApplicationContainer holds all wired dependencies
@@ -30,7 +31,11 @@ func Init(app *bootstrap.App) *ApplicationContainer {
 	applicationServices := WireApplicationServices(app, repositories, useCases, infrastructure)
 
 	// Layer 5: Handler Layer (Delivery/Presentation)
-	handlers := WireHandlers(app, useCases, applicationServices, infrastructure)
+	var jiraClient *jira.Client
+	if app.Config.Jira.BaseURL != "" {
+		jiraClient = jira.NewClient(app.Config.Jira.BaseURL, app.Config.Jira.Email, app.Config.Jira.APIToken)
+	}
+	handlers := WireHandlers(app, useCases, applicationServices, infrastructure, jiraClient)
 	grpcHandlers := WireGrpcHandlers(useCases)
 
 	// Layer 5: Middleware Layer

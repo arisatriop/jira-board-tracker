@@ -17,6 +17,7 @@ func (r *InternalRouteRegistry) register(route fiber.Router) {
 
 	r.foo(internal)
 	r.bar(internal)
+	r.jira(internal)
 }
 
 func (r *InternalRouteRegistry) foo(internal fiber.Router) {
@@ -35,6 +36,12 @@ func (r *InternalRouteRegistry) foo(internal fiber.Router) {
 
 	foo.Get("/:id",
 		r.Wired.Handlers.Foo.Get)
+}
+
+func (r *InternalRouteRegistry) jira(internal fiber.Router) {
+	jira := internal.Group("jira")
+	jira.Get("/boards", r.Wired.Handlers.Jira.GetBoards)
+	jira.Get("/boards/:id/summary", r.Wired.Handlers.Jira.GetBoardSummary)
 }
 
 func (r *InternalRouteRegistry) bar(internal fiber.Router) {

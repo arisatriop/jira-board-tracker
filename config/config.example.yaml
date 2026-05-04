@@ -117,3 +117,8 @@ service:
 api_key:
   default: <API_KEY_DEFAULT>
   partner1: <API_KEY_PARTNER1>
+
+jira:
+  base_url: https://<YOUR_DOMAIN>.atlassian.net
+  email: <YOUR_JIRA_EMAIL>
+  api_token: <YOUR_JIRA_API_TOKEN>

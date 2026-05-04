@@ -9,6 +9,7 @@ import (
 	"project-tracker/internal/delivery/http/middleware"
 	"project-tracker/internal/domain/auth"
 	pkgcache "project-tracker/pkg/cache"
+	"project-tracker/pkg/jira"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -19,10 +20,7 @@ type Handlers struct {
 	Foo    *handler.Foo
 	Bar    *handler.Bar
 	Upload *handler.Upload
-	// Future handlers will be added here:
-	// UserHandler    *handler.UserHandler
-	// OrderHandler   *handler.OrderHandler
-	// ProductHandler *handler.ProductHandler
+	Jira   *handler.Jira
 }
 
 // Middleware contains all middleware components
@@ -38,8 +36,7 @@ type Middleware struct {
 }
 
 // WireHandlers creates all HTTP handlers
-func WireHandlers(app *bootstrap.App, useCases *UseCases, appServices *ApplicationServices, infrastructure *Infrastructure) *Handlers {
-	// Create device service
+func WireHandlers(app *bootstrap.App, useCases *UseCases, appServices *ApplicationServices, infrastructure *Infrastructure, jiraClient *jira.Client) *Handlers {
 	deviceService := auth.NewDeviceService()
 
 	return &Handlers{
@@ -47,6 +44,7 @@ func WireHandlers(app *bootstrap.App, useCases *UseCases, appServices *Applicati
 		Upload: handler.NewUpload(app.Validator, infrastructure.FilesystemManager, app.Config.FileSystem.MaxFileSize),
 		Foo:    handler.NewFoo(app.Validator, useCases.FooUC),
 		Bar:    handler.NewBar(app.Validator, useCases.BarUC),
+		Jira:   handler.NewJira(jiraClient, app.Config.Apikeys["default"]),
 	}
 }
 
