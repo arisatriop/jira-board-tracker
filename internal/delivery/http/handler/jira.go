@@ -532,10 +532,10 @@ var boardsTemplate = `<!DOCTYPE html>
               undoneAssigneeMap[name] = { display_name: name, avatar_url: av, count: 0 };
             }
             undoneAssigneeMap[name].count++;
-            if (!statusAssigneesMap[sName]) statusAssigneesMap[sName] = [];
-            if (!statusAssigneesMap[sName].includes(name)) statusAssigneesMap[sName].push(name);
-            if (!typeAssigneesMap[tName]) typeAssigneesMap[tName] = [];
-            if (!typeAssigneesMap[tName].includes(name)) typeAssigneesMap[tName].push(name);
+            if (!statusAssigneesMap[sName]) statusAssigneesMap[sName] = {};
+            statusAssigneesMap[sName][name] = (statusAssigneesMap[sName][name] || 0) + 1;
+            if (!typeAssigneesMap[tName]) typeAssigneesMap[tName] = {};
+            typeAssigneesMap[tName][name] = (typeAssigneesMap[tName][name] || 0) + 1;
           }
         });
 
@@ -596,6 +596,12 @@ var boardsTemplate = `<!DOCTYPE html>
           html += '</div></div>';
         }
 
+        html += '<div class="border-t border-amber-200 pt-3 mt-1">'
+          + '<a href="/jira/boards/' + data.board.id + '/remaining" class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors">'
+          + 'View full remaining list'
+          + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>'
+          + '</a></div>';
+
         html += '</div>';
       }
 
@@ -634,11 +640,15 @@ var boardsTemplate = `<!DOCTYPE html>
       content.innerHTML = html;
     }
     function showPillTooltip(event) {
-      const assignees = JSON.parse(event.currentTarget.dataset.assignees || '[]');
-      if (!assignees.length) return;
+      const assignees = JSON.parse(event.currentTarget.dataset.assignees || '{}');
+      const entries = Object.entries(assignees).sort(function(a, b) { return b[1] - a[1]; });
+      if (!entries.length) return;
       const el = document.getElementById('pill-tooltip');
-      document.getElementById('pill-tooltip-inner').innerHTML = assignees.map(function(a) {
-        return '<div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>' + esc(a) + '</div>';
+      document.getElementById('pill-tooltip-inner').innerHTML = entries.map(function(e) {
+        return '<div class="flex items-center justify-between gap-4">'
+          + '<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>' + esc(e[0]) + '</span>'
+          + '<span class="font-semibold text-amber-300">' + e[1] + '</span>'
+          + '</div>';
       }).join('');
       el.classList.remove('hidden');
       const rect = event.currentTarget.getBoundingClientRect();
@@ -655,6 +665,300 @@ var boardsTemplate = `<!DOCTYPE html>
   <div id="pill-tooltip" class="fixed z-[200] hidden bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none space-y-1">
     <div id="pill-tooltip-inner"></div>
   </div>
+
+</body>
+</html>`
+
+func (h *Jira) RemainingView(ctx *fiber.Ctx) error {
+	type viewData struct {
+		Board       jira.Board
+		Sprint      *jira.Sprint
+		SprintStats jira.SprintStats
+		Issues      []jira.Issue
+		TotalSprint int
+		HasMore     bool
+		Error       string
+	}
+
+	data := viewData{}
+
+	if h.client == nil {
+		data.Error = "Jira integration is not configured."
+	} else {
+		boardID, err := strconv.Atoi(ctx.Params("id"))
+		if err != nil {
+			data.Error = "Invalid board ID."
+		} else {
+			summary, err := h.client.GetBoardSummary(ctx.Context(), boardID)
+			if err != nil {
+				data.Error = "Failed to fetch board: " + err.Error()
+			} else {
+				data.Board = summary.Board
+				data.Sprint = summary.ActiveSprint
+				data.SprintStats = summary.SprintStats
+				data.TotalSprint = summary.TotalIssues
+				data.HasMore = summary.TotalIssues > len(summary.Issues)
+				for _, issue := range summary.Issues {
+					if issue.Fields.Status.StatusCategory.Key != "done" {
+						data.Issues = append(data.Issues, issue)
+					}
+				}
+			}
+		}
+	}
+
+	tmpl, err := template.New("remaining").Funcs(template.FuncMap{
+		"pct": func(done, total int) int {
+			if total == 0 {
+				return 0
+			}
+			return int(math.Round(float64(done) / float64(total) * 100))
+		},
+		"dateShort": func(s string) string {
+			if len(s) >= 10 {
+				return s[:10]
+			}
+			return s
+		},
+		"priorityClass": func(p string) string {
+			m := map[string]string{
+				"Highest": "text-red-600",
+				"High":    "text-orange-500",
+				"Medium":  "text-yellow-500",
+				"Low":     "text-blue-400",
+				"Lowest":  "text-gray-400",
+			}
+			if c, ok := m[p]; ok {
+				return c
+			}
+			return "text-gray-400"
+		},
+		"statusDotClass": func(s string) string {
+			m := map[string]string{
+				"To Do":       "bg-gray-400",
+				"In Progress": "bg-blue-500",
+				"In Review":   "bg-yellow-400",
+				"Done":        "bg-emerald-500",
+			}
+			if c, ok := m[s]; ok {
+				return c
+			}
+			return "bg-gray-300"
+		},
+		"typeBadgeClass": func(t string) string {
+			m := map[string]string{
+				"Bug":      "bg-red-50 text-red-600 border-red-200",
+				"Story":    "bg-purple-50 text-purple-600 border-purple-200",
+				"Task":     "bg-blue-50 text-blue-600 border-blue-200",
+				"Epic":     "bg-orange-50 text-orange-600 border-orange-200",
+				"Sub-task": "bg-gray-50 text-gray-600 border-gray-200",
+			}
+			if c, ok := m[t]; ok {
+				return c
+			}
+			return "bg-gray-50 text-gray-500 border-gray-200"
+		},
+	}).Parse(remainingTemplate)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).SendString("template error: " + err.Error())
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).SendString("render error: " + err.Error())
+	}
+
+	ctx.Set("Content-Type", "text/html; charset=utf-8")
+	return ctx.Send(buf.Bytes())
+}
+
+var remainingTemplate = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remaining Work{{if .Board.Name}} — {{.Board.Name}}{{end}}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<div class="max-w-6xl mx-auto px-6 py-8">
+
+  <!-- Back nav -->
+  <a href="/jira/boards" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-6 transition-colors group">
+    <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back to Boards
+  </a>
+
+  {{if .Error}}
+  <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 mb-6">{{.Error}}</div>
+  {{else}}
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        {{if eq .Board.Type "scrum"}}
+        <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Scrum</span>
+        {{else if eq .Board.Type "kanban"}}
+        <span class="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Kanban</span>
+        {{end}}
+        <span class="text-xs text-gray-400">Board {{.Board.ID}}</span>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">{{.Board.Name}}</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Remaining work</p>
+    </div>
+    <div class="text-right flex-shrink-0">
+      <p class="text-3xl font-bold text-amber-600">{{len .Issues}}</p>
+      <p class="text-sm text-gray-400">remaining tickets</p>
+    </div>
+  </div>
+
+  <!-- Sprint card -->
+  {{if .Sprint}}
+  {{$done  := .SprintStats.Done}}
+  {{$total := .SprintStats.Total}}
+  <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6 shadow-sm">
+    <div class="flex items-start justify-between gap-4 mb-3">
+      <div>
+        <p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-0.5">Active Sprint</p>
+        <p class="text-base font-semibold text-gray-800">{{.Sprint.Name}}</p>
+        {{if .Sprint.Goal}}<p class="text-sm text-gray-500 italic mt-0.5">&ldquo;{{.Sprint.Goal}}&rdquo;</p>{{end}}
+      </div>
+      {{if gt $total 0}}
+      <div class="text-right flex-shrink-0">
+        <p class="text-2xl font-bold text-gray-800">{{pct $done $total}}<span class="text-base font-normal text-gray-400">%</span></p>
+        <p class="text-xs text-gray-500">{{$done}}/{{$total}} done</p>
+      </div>
+      {{end}}
+    </div>
+    {{if gt $total 0}}
+    <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-full rounded-full bg-blue-500" style="width:{{pct $done $total}}%"></div>
+    </div>
+    {{end}}
+    {{if or .Sprint.StartDate .Sprint.EndDate}}
+    <div class="flex gap-4 text-xs text-gray-400 mt-2">
+      {{if .Sprint.StartDate}}<span>Start: {{dateShort .Sprint.StartDate}}</span>{{end}}
+      {{if .Sprint.EndDate}}<span>End: {{dateShort .Sprint.EndDate}}</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .HasMore}}
+  <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700 mb-4">
+    Sprint has {{.TotalSprint}} issues total — showing undone from the first 200 fetched.
+  </div>
+  {{end}}
+
+  {{if .Issues}}
+  <!-- Filter bar -->
+  <div class="flex flex-col sm:flex-row gap-3 mb-3">
+    <div class="relative flex-1">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+      </svg>
+      <input id="search-input" type="text" placeholder="Search by key or summary..."
+             oninput="applyFilters()"
+             class="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400" />
+    </div>
+    <select id="filter-status"   onchange="applyFilters()" class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="">All Statuses</option>
+    </select>
+    <select id="filter-type"     onchange="applyFilters()" class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="">All Types</option>
+    </select>
+    <select id="filter-assignee" onchange="applyFilters()" class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="">All Assignees</option>
+    </select>
+  </div>
+  <p id="ticket-count" class="text-sm text-gray-500 mb-3">{{len .Issues}} ticket{{if gt (len .Issues) 1}}s{{end}} remaining</p>
+
+  <!-- Ticket list -->
+  <div id="ticket-list" class="space-y-1.5">
+    {{range .Issues}}
+    <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all"
+         data-status="{{.Fields.Status.Name}}"
+         data-type="{{.Fields.IssueType.Name}}"
+         data-assignee="{{if .Fields.Assignee}}{{.Fields.Assignee.DisplayName}}{{else}}Unassigned{{end}}"
+         data-key="{{.Key}}"
+         data-summary="{{.Fields.Summary}}">
+      <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {{statusDotClass .Fields.Status.Name}}"></span>
+      <span class="text-xs font-mono font-semibold text-blue-600 w-28 flex-shrink-0">{{.Key}}</span>
+      {{if .Fields.IssueType.Name}}
+      <span class="text-xs font-medium px-2 py-0.5 rounded-full border flex-shrink-0 {{typeBadgeClass .Fields.IssueType.Name}}">{{.Fields.IssueType.Name}}</span>
+      {{end}}
+      <span class="text-sm text-gray-800 flex-1 min-w-0">{{.Fields.Summary}}</span>
+      <span class="text-xs text-gray-500 flex-shrink-0 w-36 text-right truncate">
+        {{if .Fields.Assignee}}{{.Fields.Assignee.DisplayName}}{{else}}<span class="text-gray-300">Unassigned</span>{{end}}
+      </span>
+      {{if .Fields.Priority}}
+      <span class="text-xs font-medium flex-shrink-0 w-16 text-right {{priorityClass .Fields.Priority.Name}}">{{.Fields.Priority.Name}}</span>
+      {{end}}
+      <span class="text-xs text-gray-400 flex-shrink-0 w-28 text-right">{{.Fields.Status.Name}}</span>
+    </div>
+    {{end}}
+  </div>
+
+  {{else}}
+  <div class="text-center py-24 text-gray-400">
+    <svg class="w-14 h-14 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="text-sm font-medium">Everything is done!</p>
+    <p class="text-xs mt-1">No remaining work in this sprint.</p>
+  </div>
+  {{end}}
+
+  {{end}}
+</div>
+
+<script>
+  (function() {
+    const rows = document.querySelectorAll('#ticket-list [data-status]');
+    const statuses = new Set(), types = new Set(), assignees = new Set();
+    rows.forEach(function(r) {
+      if (r.dataset.status) statuses.add(r.dataset.status);
+      if (r.dataset.type)   types.add(r.dataset.type);
+      if (r.dataset.assignee) assignees.add(r.dataset.assignee);
+    });
+    function populate(id, values) {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      [...values].sort().forEach(function(v) {
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = v;
+        sel.appendChild(opt);
+      });
+    }
+    populate('filter-status', statuses);
+    populate('filter-type', types);
+    populate('filter-assignee', assignees);
+  })();
+
+  function applyFilters() {
+    const q        = (document.getElementById('search-input').value || '').toLowerCase().trim();
+    const status   = document.getElementById('filter-status').value;
+    const type     = document.getElementById('filter-type').value;
+    const assignee = document.getElementById('filter-assignee').value;
+    const rows = document.querySelectorAll('#ticket-list [data-status]');
+    let visible = 0;
+    rows.forEach(function(row) {
+      const matchSearch   = !q || (row.dataset.key + ' ' + row.dataset.summary).toLowerCase().includes(q);
+      const matchStatus   = !status   || row.dataset.status   === status;
+      const matchType     = !type     || row.dataset.type     === type;
+      const matchAssignee = !assignee || row.dataset.assignee === assignee;
+      const show = matchSearch && matchStatus && matchType && matchAssignee;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    const el = document.getElementById('ticket-count');
+    if (el) el.textContent = visible + ' ticket' + (visible !== 1 ? 's' : '') + ' remaining';
+  }
+</script>
 
 </body>
 </html>`
