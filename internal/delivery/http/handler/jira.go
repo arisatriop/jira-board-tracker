@@ -514,6 +514,8 @@ var boardsTemplate = `<!DOCTYPE html>
         const undoneByStatus = {};
         const undoneByType = {};
         const undoneAssigneeMap = {};
+        const statusAssigneesMap = {};
+        const typeAssigneesMap = {};
 
         undone.forEach(function(i) {
           const sName = i.fields.status.name;
@@ -530,6 +532,10 @@ var boardsTemplate = `<!DOCTYPE html>
               undoneAssigneeMap[name] = { display_name: name, avatar_url: av, count: 0 };
             }
             undoneAssigneeMap[name].count++;
+            if (!statusAssigneesMap[sName]) statusAssigneesMap[sName] = [];
+            if (!statusAssigneesMap[sName].includes(name)) statusAssigneesMap[sName].push(name);
+            if (!typeAssigneesMap[tName]) typeAssigneesMap[tName] = [];
+            if (!typeAssigneesMap[tName].includes(name)) typeAssigneesMap[tName].push(name);
           }
         });
 
@@ -552,11 +558,13 @@ var boardsTemplate = `<!DOCTYPE html>
 
         let statusPills = '';
         for (const entry of Object.entries(undoneByStatus)) {
-          statusPills += '<span class="text-xs font-medium px-2.5 py-1 rounded-full ' + statusColor(entry[0]) + '">' + esc(entry[0]) + ': ' + entry[1] + '</span>';
+          const sa = JSON.stringify(statusAssigneesMap[entry[0]] || []).replace(/'/g, '&#39;');
+          statusPills += '<span class="text-xs font-medium px-2.5 py-1 rounded-full cursor-default ' + statusColor(entry[0]) + '" data-assignees=\'' + sa + '\' onmouseenter="showPillTooltip(event)" onmouseleave="hidePillTooltip()">' + esc(entry[0]) + ': ' + entry[1] + '</span>';
         }
         let typePills = '';
         for (const entry of Object.entries(undoneByType)) {
-          typePills += '<span class="text-xs font-medium px-2.5 py-1 rounded-full border ' + typeColor(entry[0]) + '">' + esc(entry[0]) + ': ' + entry[1] + '</span>';
+          const ta = JSON.stringify(typeAssigneesMap[entry[0]] || []).replace(/'/g, '&#39;');
+          typePills += '<span class="text-xs font-medium px-2.5 py-1 rounded-full border cursor-default ' + typeColor(entry[0]) + '" data-assignees=\'' + ta + '\' onmouseenter="showPillTooltip(event)" onmouseleave="hidePillTooltip()">' + esc(entry[0]) + ': ' + entry[1] + '</span>';
         }
 
         html += '<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">'
@@ -625,7 +633,28 @@ var boardsTemplate = `<!DOCTYPE html>
 
       content.innerHTML = html;
     }
+    function showPillTooltip(event) {
+      const assignees = JSON.parse(event.currentTarget.dataset.assignees || '[]');
+      if (!assignees.length) return;
+      const el = document.getElementById('pill-tooltip');
+      document.getElementById('pill-tooltip-inner').innerHTML = assignees.map(function(a) {
+        return '<div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>' + esc(a) + '</div>';
+      }).join('');
+      el.classList.remove('hidden');
+      const rect = event.currentTarget.getBoundingClientRect();
+      const left = Math.min(rect.left, window.innerWidth - el.offsetWidth - 8);
+      el.style.left = left + 'px';
+      el.style.top = (rect.bottom + 6) + 'px';
+    }
+
+    function hidePillTooltip() {
+      document.getElementById('pill-tooltip').classList.add('hidden');
+    }
   </script>
+
+  <div id="pill-tooltip" class="fixed z-[200] hidden bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none space-y-1">
+    <div id="pill-tooltip-inner"></div>
+  </div>
 
 </body>
 </html>`
