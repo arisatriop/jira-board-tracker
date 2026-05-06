@@ -103,14 +103,14 @@ type AssigneeStat struct {
 }
 
 type BoardSummary struct {
-	Board          Board           `json:"board"`
-	ActiveSprint   *Sprint         `json:"active_sprint,omitempty"`
-	SprintStats    SprintStats     `json:"sprint_stats"`
-	Issues         []Issue         `json:"issues"`
-	TotalIssues    int             `json:"total_issues"`
-	StatusStats    map[string]int  `json:"status_stats"`
-	TypeStats      map[string]int  `json:"type_stats"`
-	AssigneeStats  []AssigneeStat  `json:"assignee_stats"`
+	Board         Board          `json:"board"`
+	ActiveSprint  *Sprint        `json:"active_sprint,omitempty"`
+	SprintStats   SprintStats    `json:"sprint_stats"`
+	Issues        []Issue        `json:"issues"`
+	TotalIssues   int            `json:"total_issues"`
+	StatusStats   map[string]int `json:"status_stats"`
+	TypeStats     map[string]int `json:"type_stats"`
+	AssigneeStats []AssigneeStat `json:"assignee_stats"`
 }
 
 func (c *Client) GetBoards(ctx context.Context) ([]Board, error) {
@@ -191,23 +191,37 @@ func (c *Client) GetBoardSummary(ctx context.Context, boardID int) (*BoardSummar
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		var issues issuesResponse
-		var path string
+		var baseURL string
 		if summary.ActiveSprint != nil {
-			path = fmt.Sprintf("/rest/agile/1.0/sprint/%d/issue?maxResults=200", summary.ActiveSprint.ID)
+			baseURL = fmt.Sprintf("/rest/agile/1.0/sprint/%d/issue", summary.ActiveSprint.ID)
 		} else {
-			path = fmt.Sprintf("/rest/agile/1.0/board/%d/issue?maxResults=50", boardID)
+			baseURL = fmt.Sprintf("/rest/agile/1.0/board/%d/issue", boardID)
 		}
-		if err := c.do(ctx, "GET", path, &issues); err != nil {
-			return
+
+		// 1000 is the Jira API hard cap per request; most sprints fit in one call.
+		// If total exceeds 1000, we paginate — each loop iteration is one API hit.
+		var allIssues []Issue
+		startAt := 0
+		const perPage = 1000
+		for {
+			var page issuesResponse
+			if err := c.do(ctx, "GET", fmt.Sprintf("%s?maxResults=%d&startAt=%d", baseURL, perPage, startAt), &page); err != nil {
+				return
+			}
+			allIssues = append(allIssues, page.Issues...)
+			summary.TotalIssues = page.Total
+			if len(allIssues) >= page.Total || len(page.Issues) == 0 {
+				break
+			}
+			startAt += len(page.Issues)
 		}
-		summary.Issues = issues.Issues
-		summary.TotalIssues = issues.Total
+		summary.Issues = allIssues
+
 		summary.StatusStats = make(map[string]int)
 		summary.TypeStats = make(map[string]int)
 		assigneeMap := make(map[string]*AssigneeStat)
 
-		for _, issue := range issues.Issues {
+		for _, issue := range allIssues {
 			summary.StatusStats[issue.Fields.Status.Name]++
 			if issue.Fields.IssueType.Name != "" {
 				summary.TypeStats[issue.Fields.IssueType.Name]++
