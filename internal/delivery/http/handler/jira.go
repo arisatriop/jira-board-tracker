@@ -476,7 +476,7 @@ var boardsTemplate = `<!DOCTYPE html>
         modal.classList.remove('translate-x-full');
       }, 10);
 
-      fetch('/internal/jira/boards/' + boardId + '/summary', {
+      fetch('/partner/v1/jira/boards/' + boardId + '/summary', {
         headers: { 'X-Api-Key': API_KEY }
       })
       .then(r => r.json())

@@ -18,6 +18,7 @@ func (r *PartnerRouteRegistry) register(route fiber.Router) {
 
 	r.foo(v1)
 	r.bar(v1)
+	r.jira(v1)
 }
 
 func (r *PartnerRouteRegistry) foo(v1 fiber.Router) {
@@ -36,6 +37,12 @@ func (r *PartnerRouteRegistry) foo(v1 fiber.Router) {
 
 	foo.Get("/:id",
 		r.Wired.Handlers.Foo.Get)
+}
+
+func (r *PartnerRouteRegistry) jira(v1 fiber.Router) {
+	jira := v1.Group("jira")
+	jira.Get("/boards", r.Wired.Handlers.Jira.GetBoards)
+	jira.Get("/boards/:id/summary", r.Wired.Handlers.Jira.GetBoardSummary)
 }
 
 func (r *PartnerRouteRegistry) bar(v1 fiber.Router) {
