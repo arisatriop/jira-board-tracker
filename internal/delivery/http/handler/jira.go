@@ -704,30 +704,18 @@ var boardsTemplate = `<!DOCTYPE html>
 
       // Issues list
       if (data.issues && data.issues.length > 0) {
-        const priorityColor = p => ({ 'Highest': 'text-red-600', 'High': 'text-orange-500', 'Medium': 'text-yellow-500', 'Low': 'text-blue-400', 'Lowest': 'text-gray-400' }[p] || 'text-gray-400');
-        const statusDot = s => ({ 'To Do': 'bg-gray-400', 'In Progress': 'bg-blue-500', 'In Review': 'bg-yellow-400', 'Done': 'bg-emerald-500' }[s] || 'bg-gray-300');
+        html += '<div id="issues-section">'
+          + '<div class="flex items-center justify-between mb-2">'
+          + '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Issues</p>'
+          + '<span id="issues-count" class="text-xs text-gray-400"></span>'
+          + '</div>'
+          + '<div id="issues-list" class="space-y-1.5"></div>'
+          + '<div id="issues-pagination" class="flex items-center justify-center gap-1 mt-3"></div>'
+          + '</div>';
 
-        html += '<div><p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Issues</p><div class="space-y-1.5">';
-        data.issues.forEach(function(issue) {
-          const prio = (issue.fields.priority && issue.fields.priority.name) || '';
-          const type = (issue.fields.issuetype && issue.fields.issuetype.name) || '';
-          const typeHtml = type ? '<span class="text-xs text-gray-400">' + esc(type) + '</span>' : '';
-          const assigneeHtml = issue.fields.assignee
-            ? '<span class="text-xs text-gray-400">&middot; ' + esc(issue.fields.assignee.displayName) + '</span>'
-            : '<span class="text-xs text-gray-300">&middot; Unassigned</span>';
-          const prioHtml = prio ? '<span class="text-xs font-medium ' + priorityColor(prio) + ' ml-auto">' + esc(prio) + '</span>' : '';
-          html += '<div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">'
-            + '<span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ' + statusDot(issue.fields.status.name) + '"></span>'
-            + '<div class="flex-1 min-w-0">'
-            + '<div class="flex items-center gap-1.5 mb-0.5"><span class="text-xs font-mono font-semibold text-blue-600">' + esc(issue.key) + '</span>' + typeHtml + '</div>'
-            + '<p class="text-sm text-gray-800 truncate">' + esc(issue.fields.summary) + '</p>'
-            + '<div class="flex items-center gap-2 mt-1"><span class="text-xs text-gray-500">' + esc(issue.fields.status.name) + '</span>' + assigneeHtml + prioHtml + '</div>'
-            + '</div></div>';
-        });
-        if (data.total_issues > data.issues.length) {
-          html += '<p class="text-xs text-gray-400 text-center pt-1">Showing ' + data.issues.length + ' of ' + data.total_issues + ' issues</p>';
-        }
-        html += '</div></div>';
+        content.innerHTML = html;
+        initIssuesPagination(data.issues);
+        return;
       }
 
       if (!html) {
@@ -736,6 +724,78 @@ var boardsTemplate = `<!DOCTYPE html>
 
       content.innerHTML = html;
     }
+    function initIssuesPagination(issues) {
+      const perPage = 10;
+      let page = 1;
+      const totalPages = () => Math.ceil(issues.length / perPage);
+
+      const priorityColor = p => ({ 'Highest': 'text-red-600', 'High': 'text-orange-500', 'Medium': 'text-yellow-500', 'Low': 'text-blue-400', 'Lowest': 'text-gray-400' }[p] || 'text-gray-400');
+      const statusDot = s => ({ 'To Do': 'bg-gray-400', 'In Progress': 'bg-blue-500', 'In Review': 'bg-yellow-400', 'Done': 'bg-emerald-500' }[s] || 'bg-gray-300');
+
+      function renderIssues() {
+        const start = (page - 1) * perPage;
+        const slice = issues.slice(start, start + perPage);
+
+        const countEl = document.getElementById('issues-count');
+        if (countEl) countEl.textContent = (start + 1) + '–' + Math.min(start + perPage, issues.length) + ' of ' + issues.length;
+
+        const listEl = document.getElementById('issues-list');
+        if (!listEl) return;
+        listEl.innerHTML = slice.map(function(issue) {
+          const prio = (issue.fields.priority && issue.fields.priority.name) || '';
+          const type = (issue.fields.issuetype && issue.fields.issuetype.name) || '';
+          const typeHtml = type ? '<span class="text-xs text-gray-400">' + esc(type) + '</span>' : '';
+          const assigneeHtml = issue.fields.assignee
+            ? '<span class="text-xs text-gray-400">&middot; ' + esc(issue.fields.assignee.displayName) + '</span>'
+            : '<span class="text-xs text-gray-300">&middot; Unassigned</span>';
+          const prioHtml = prio ? '<span class="text-xs font-medium ' + priorityColor(prio) + ' ml-auto">' + esc(prio) + '</span>' : '';
+          return '<div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">'
+            + '<span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ' + statusDot(issue.fields.status.name) + '"></span>'
+            + '<div class="flex-1 min-w-0">'
+            + '<div class="flex items-center gap-1.5 mb-0.5"><span class="text-xs font-mono font-semibold text-blue-600">' + esc(issue.key) + '</span>' + typeHtml + '</div>'
+            + '<p class="text-sm text-gray-800 truncate">' + esc(issue.fields.summary) + '</p>'
+            + '<div class="flex items-center gap-2 mt-1"><span class="text-xs text-gray-500">' + esc(issue.fields.status.name) + '</span>' + assigneeHtml + prioHtml + '</div>'
+            + '</div></div>';
+        }).join('');
+
+        renderIssuesPager();
+      }
+
+      function renderIssuesPager() {
+        const el = document.getElementById('issues-pagination');
+        if (!el) return;
+        const tp = totalPages();
+        if (tp <= 1) { el.innerHTML = ''; return; }
+
+        const btnBase = 'px-2.5 py-1 text-xs rounded-lg border transition-colors';
+        const btnActive = 'bg-blue-500 border-blue-500 text-white font-semibold';
+        const btnInactive = 'bg-white border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600';
+        const btnDisabled = 'bg-white border-gray-100 text-gray-300 cursor-not-allowed';
+
+        let h = '<button onclick="issuesGoPage(' + (page - 1) + ')" ' + (page === 1 ? 'disabled' : '') + ' class="' + btnBase + ' ' + (page === 1 ? btnDisabled : btnInactive) + '">‹</button>';
+        const pages = new Set([1, tp]);
+        for (let p = Math.max(1, page - 2); p <= Math.min(tp, page + 2); p++) pages.add(p);
+        let prev = null;
+        for (const p of [...pages].sort((a, b) => a - b)) {
+          if (prev !== null && p - prev > 1) h += '<span class="px-1 text-xs text-gray-400">…</span>';
+          h += '<button onclick="issuesGoPage(' + p + ')" class="' + btnBase + ' ' + (p === page ? btnActive : btnInactive) + '">' + p + '</button>';
+          prev = p;
+        }
+        h += '<button onclick="issuesGoPage(' + (page + 1) + ')" ' + (page === tp ? 'disabled' : '') + ' class="' + btnBase + ' ' + (page === tp ? btnDisabled : btnInactive) + '">›</button>';
+        el.innerHTML = h;
+      }
+
+      window.issuesGoPage = function(p) {
+        const tp = totalPages();
+        if (p < 1 || p > tp) return;
+        page = p;
+        renderIssues();
+        document.getElementById('issues-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      renderIssues();
+    }
+
     function showPillTooltip(event) {
       const assignees = JSON.parse(event.currentTarget.dataset.assignees || '{}');
       const entries = Object.entries(assignees).sort(function(a, b) { return b[1] - a[1]; });
