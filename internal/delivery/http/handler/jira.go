@@ -208,7 +208,7 @@ var boardsTemplate = `<!DOCTYPE html>
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
         </svg>
-        <input id="search-input" type="text" placeholder="Search boards..."
+        <input id="search-input" type="text" placeholder="Search by name or ID..."
                oninput="applyFilters()"
                class="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400" />
       </div>
@@ -225,14 +225,24 @@ var boardsTemplate = `<!DOCTYPE html>
         <button onclick="setSprint('none')"     id="sprint-none"     class="filter-btn sprint-btn px-3 py-2 text-sm font-medium rounded-xl border transition-colors">No Sprint</button>
       </div>
     </div>
-    <p id="board-count" class="text-sm text-gray-500 mb-4">{{len .Boards}} board{{if gt (len .Boards) 1}}s{{end}} found</p>
+    <div class="flex items-center justify-between mb-4">
+      <p id="board-count" class="text-sm text-gray-500">{{len .Boards}} board{{if gt (len .Boards) 1}}s{{end}} found</p>
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <span>Per page:</span>
+        <select id="page-size" onchange="changePageSize()" class="text-sm bg-white border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="12" selected>12</option>
+          <option value="24">24</option>
+          <option value="48">48</option>
+        </select>
+      </div>
+    </div>
     {{end}}
 
     <!-- Board grid -->
     <div id="board-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {{range .Boards}}
       <div onclick="openSummary({{.ID}}, '{{.Name}}')"
-           data-name="{{.Name}}" data-type="{{.Type}}"
+           data-name="{{.Name}}" data-type="{{.Type}}" data-id="{{.ID}}"
            data-sprint="{{if .ActiveSprint}}{{if .Overdue}}overdue{{else}}active{{end}}{{else}}none{{end}}"
            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer p-5 group">
         <div class="flex items-start justify-between gap-2 mb-3">
@@ -290,6 +300,9 @@ var boardsTemplate = `<!DOCTYPE html>
       {{end}}
     </div>
 
+    <!-- Pagination -->
+    <div id="pagination" class="flex items-center justify-center gap-1 mt-6"></div>
+
   </div>
 
   <!-- Modal backdrop -->
@@ -335,6 +348,9 @@ var boardsTemplate = `<!DOCTYPE html>
 
     let activeType   = 'all';
     let activeSprint = 'all';
+    let currentPage  = 1;
+    let pageSize     = 12;
+    let filteredCards = [];
 
     function setType(type) {
       activeType = type;
@@ -350,24 +366,101 @@ var boardsTemplate = `<!DOCTYPE html>
       applyFilters();
     }
 
+    function changePageSize() {
+      pageSize = parseInt(document.getElementById('page-size').value);
+      currentPage = 1;
+      renderPage();
+    }
+
     function applyFilters() {
       const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
       const cards = document.querySelectorAll('#board-grid [data-name]');
-      let visible = 0;
+      filteredCards = [];
       cards.forEach(card => {
         const name   = card.dataset.name.toLowerCase();
         const type   = card.dataset.type.toLowerCase();
         const sprint = card.dataset.sprint;
-        const matchSearch = !q || name.includes(q);
-        const matchType   = activeType === 'all' || type === activeType;
-        const matchSprint = activeSprint === 'all' || sprint === activeSprint;
-        const show = matchSearch && matchType && matchSprint;
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
+        const id     = card.dataset.id || '';
+        const match  = (!q || name.includes(q) || id === q)
+                    && (activeType   === 'all' || type   === activeType)
+                    && (activeSprint === 'all' || sprint === activeSprint);
+        card.style.display = 'none';
+        if (match) filteredCards.push(card);
       });
-      const countEl = document.getElementById('board-count');
-      if (countEl) countEl.textContent = visible + ' board' + (visible !== 1 ? 's' : '') + ' found';
+      currentPage = 1;
+      renderPage();
     }
+
+    function renderPage() {
+      const total = filteredCards.length;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * pageSize;
+      const end   = start + pageSize;
+
+      filteredCards.forEach((card, i) => {
+        card.style.display = (i >= start && i < end) ? '' : 'none';
+      });
+
+      const countEl = document.getElementById('board-count');
+      if (countEl) {
+        const showing = Math.min(end, total) - start;
+        countEl.textContent = total + ' board' + (total !== 1 ? 's' : '') + ' found'
+          + (totalPages > 1 ? ' — showing ' + (start + 1) + '–' + Math.min(end, total) : '');
+      }
+
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+      const el = document.getElementById('pagination');
+      if (!el) return;
+      if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+      const btnBase = 'px-3 py-1.5 text-sm rounded-lg border transition-colors';
+      const btnActive = 'bg-blue-500 border-blue-500 text-white font-semibold';
+      const btnInactive = 'bg-white border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600';
+      const btnDisabled = 'bg-white border-gray-100 text-gray-300 cursor-not-allowed';
+
+      let html = '';
+
+      html += '<button onclick="goPage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + ' class="' + btnBase + ' ' + (currentPage === 1 ? btnDisabled : btnInactive) + '">‹ Prev</button>';
+
+      const pages = pagesToShow(currentPage, totalPages);
+      let prev = null;
+      for (const p of pages) {
+        if (prev !== null && p - prev > 1) {
+          html += '<span class="px-2 py-1.5 text-sm text-gray-400">…</span>';
+        }
+        if (p === currentPage) {
+          html += '<button class="' + btnBase + ' ' + btnActive + '">' + p + '</button>';
+        } else {
+          html += '<button onclick="goPage(' + p + ')" class="' + btnBase + ' ' + btnInactive + '">' + p + '</button>';
+        }
+        prev = p;
+      }
+
+      html += '<button onclick="goPage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="' + btnBase + ' ' + (currentPage === totalPages ? btnDisabled : btnInactive) + '">Next ›</button>';
+
+      el.innerHTML = html;
+    }
+
+    function pagesToShow(current, total) {
+      const pages = new Set([1, total]);
+      for (let p = Math.max(1, current - 2); p <= Math.min(total, current + 2); p++) pages.add(p);
+      return [...pages].sort((a, b) => a - b);
+    }
+
+    function goPage(p) {
+      const totalPages = Math.max(1, Math.ceil(filteredCards.length / pageSize));
+      if (p < 1 || p > totalPages) return;
+      currentPage = p;
+      renderPage();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // initialise on load
+    window.addEventListener('DOMContentLoaded', function() { applyFilters(); });
 
     function openSummary(boardId, boardName) {
       document.getElementById('modal-title').textContent = boardName;
@@ -498,6 +591,7 @@ var boardsTemplate = `<!DOCTYPE html>
             : '<div class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">' + initials + '</div>';
           html += '<div class="flex items-center gap-3">' + avatar
             + '<span class="text-sm text-gray-700 flex-1">' + esc(a.display_name) + '</span>'
+            + '<span class="text-xs font-medium text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full" title="Story Points">' + a.story_points + ' SP</span>'
             + '<span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">' + a.count + '</span>'
             + '</div>';
         });
@@ -529,9 +623,11 @@ var boardsTemplate = `<!DOCTYPE html>
               if (i.fields.assignee.avatarUrls && i.fields.assignee.avatarUrls['32x32']) {
                 av = i.fields.assignee.avatarUrls['32x32'];
               }
-              undoneAssigneeMap[name] = { display_name: name, avatar_url: av, count: 0 };
+              undoneAssigneeMap[name] = { display_name: name, avatar_url: av, count: 0, story_points: 0 };
             }
             undoneAssigneeMap[name].count++;
+            const sp = i.fields.customfield_10032;
+            if (sp != null && sp > 0) undoneAssigneeMap[name].story_points += sp;
             if (!statusAssigneesMap[sName]) statusAssigneesMap[sName] = {};
             statusAssigneesMap[sName][name] = (statusAssigneesMap[sName][name] || 0) + 1;
             if (!typeAssigneesMap[tName]) typeAssigneesMap[tName] = {};
@@ -590,6 +686,7 @@ var boardsTemplate = `<!DOCTYPE html>
               : '<div class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">' + initials + '</div>';
             html += '<div class="flex items-center gap-3">' + avatar
               + '<span class="text-sm text-gray-700 flex-1">' + esc(a.display_name) + '</span>'
+              + '<span class="text-xs font-medium text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full" title="Story Points">' + a.story_points + ' SP</span>'
               + '<span class="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">' + a.count + '</span>'
               + '</div>';
           });

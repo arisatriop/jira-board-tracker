@@ -53,12 +53,13 @@ type SubtaskRef struct {
 }
 
 type IssueFields struct {
-	Summary   string       `json:"summary"`
-	Status    IssueStatus  `json:"status"`
-	Assignee  *Assignee    `json:"assignee"`
-	Priority  *Priority    `json:"priority"`
-	IssueType IssueType    `json:"issuetype"`
-	Subtasks  []SubtaskRef `json:"subtasks"`
+	Summary     string       `json:"summary"`
+	Status      IssueStatus  `json:"status"`
+	Assignee    *Assignee    `json:"assignee"`
+	Priority    *Priority    `json:"priority"`
+	IssueType   IssueType    `json:"issuetype"`
+	Subtasks    []SubtaskRef `json:"subtasks"`
+	StoryPoints *float64     `json:"customfield_10032"`
 }
 
 type IssueStatus struct {
@@ -95,9 +96,10 @@ type SprintStats struct {
 }
 
 type AssigneeStat struct {
-	DisplayName string `json:"display_name"`
-	AvatarURL   string `json:"avatar_url"`
-	Count       int    `json:"count"`
+	DisplayName string  `json:"display_name"`
+	AvatarURL   string  `json:"avatar_url"`
+	Count       int     `json:"count"`
+	StoryPoints float64 `json:"story_points"`
 }
 
 type BoardSummary struct {
@@ -112,11 +114,21 @@ type BoardSummary struct {
 }
 
 func (c *Client) GetBoards(ctx context.Context) ([]Board, error) {
-	var result boardsResponse
-	if err := c.do(ctx, "GET", "/rest/agile/1.0/board", &result); err != nil {
-		return nil, err
+	var all []Board
+	startAt := 0
+	for {
+		var result boardsResponse
+		path := fmt.Sprintf("/rest/agile/1.0/board?maxResults=50&startAt=%d", startAt)
+		if err := c.do(ctx, "GET", path, &result); err != nil {
+			return nil, err
+		}
+		all = append(all, result.Values...)
+		if result.IsLast || len(result.Values) == 0 {
+			break
+		}
+		startAt += len(result.Values)
 	}
-	return result.Values, nil
+	return all, nil
 }
 
 func (c *Client) GetSprintStats(ctx context.Context, sprintID int) (SprintStats, error) {
@@ -210,6 +222,9 @@ func (c *Client) GetBoardSummary(ctx context.Context, boardID int) (*BoardSummar
 					assigneeMap[name] = &AssigneeStat{DisplayName: name, AvatarURL: avatar}
 				}
 				assigneeMap[name].Count++
+				if issue.Fields.StoryPoints != nil {
+					assigneeMap[name].StoryPoints += *issue.Fields.StoryPoints
+				}
 			}
 		}
 		for _, a := range assigneeMap {
