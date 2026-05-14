@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"project-tracker/pkg/logger"
+	"github.com/arisatriop/jira-board-tracker/pkg/logger"
 
 	"github.com/stretchr/testify/assert"
 )

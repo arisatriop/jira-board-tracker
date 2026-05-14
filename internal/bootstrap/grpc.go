@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"project-tracker/config"
-	grpcmiddleware "project-tracker/internal/delivery/grpc/middleware"
+	"github.com/arisatriop/jira-board-tracker/config"
+	grpcmiddleware "github.com/arisatriop/jira-board-tracker/internal/delivery/grpc/middleware"
 	"strings"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"

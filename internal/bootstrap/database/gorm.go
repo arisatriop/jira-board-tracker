@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
-	"project-tracker/config"
+	"github.com/arisatriop/jira-board-tracker/config"
 	"log/slog"
 	"os"
 	"strings"

@@ -1,9 +1,9 @@
 package presenter
 
 import (
-	dtoresponse "project-tracker/internal/delivery/http/dto/response"
-	"project-tracker/internal/domain/auth"
-	"project-tracker/pkg/jwt"
+	dtoresponse "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/response"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/auth"
+	"github.com/arisatriop/jira-board-tracker/pkg/jwt"
 )
 
 // ToLoginResponse converts LoginResult to LoginResponse DTO

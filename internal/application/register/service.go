@@ -3,15 +3,15 @@ package register
 import (
 	"context"
 	"fmt"
-	"project-tracker/config"
-	"project-tracker/internal/domain/role"
-	"project-tracker/internal/domain/transaction"
-	"project-tracker/internal/domain/user"
-	"project-tracker/internal/domain/userrole"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/config"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/role"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/transaction"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/user"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/userrole"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"net/http"
 
-	auditctx "project-tracker/internal/infrastructure/context"
+	auditctx "github.com/arisatriop/jira-board-tracker/internal/infrastructure/context"
 )
 
 type ApplicationService interface {

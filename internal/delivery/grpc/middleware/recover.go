@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"runtime/debug"
 
-	"project-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -1,4 +1,4 @@
-# Project Tracker
+# SMMF Board
 
 **Internal tool for monitoring Jira boards, sprint progress, and remaining work.**
 
@@ -36,8 +36,8 @@ A server-rendered web dashboard that gives your team a real-time view of active 
 
 ```bash
 # 1. Clone & install
-git clone https://github.com/arisatriop/project-tracker.git
-cd project-tracker
+git clone https://github.com/arisatriop/jira-board-tracker.git
+cd poc-smmf-board
 go mod download
 
 # 2. Configure
@@ -45,7 +45,7 @@ cp config/config.example.yaml config/config.yaml
 # Edit config/config.yaml — fill in DB credentials and Jira section
 
 # 3. Create database
-createdb project-tracker
+createdb poc-smmf-board
 
 # 4. Run migrations
 go run cmd/migrate/main.go

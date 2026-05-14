@@ -2,7 +2,7 @@ package migration
 
 import (
 	"fmt"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"log"
 	"os"
 	"path/filepath"

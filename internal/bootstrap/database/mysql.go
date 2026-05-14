@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"database/sql"
 	"fmt"
-	"project-tracker/config"
+	"github.com/arisatriop/jira-board-tracker/config"
 	"log/slog"
 	"os"
 	"time"

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"project-tracker/pkg/grpcclient"
+	"github.com/arisatriop/jira-board-tracker/pkg/grpcclient"
 
 	pb "github.com/arisatriop/goilerplate-proto/hello/v1"
 

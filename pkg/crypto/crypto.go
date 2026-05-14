@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"io"
 	"net/http"
 )

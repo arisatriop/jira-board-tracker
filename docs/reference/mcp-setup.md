@@ -25,7 +25,7 @@ Create file `config/.env` with your local DB credentials:
 ```env
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=project-tracker
+DB_NAME=poc-smmf-board
 DB_USERNAME=postgres
 DB_PASSWORD=your_password
 ```
@@ -129,7 +129,7 @@ This command reconnects all MCP servers.
 1. Verify `DB_NAME` is correct in `.env`
 2. Create database if it doesn't exist:
    ```bash
-   createdb project-tracker
+   createdb poc-smmf-board
    ```
 3. Run migrations:
    ```bash

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"project-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"

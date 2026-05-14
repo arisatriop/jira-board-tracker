@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"context"
-	"project-tracker/internal/domain/transaction"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/transaction"
 
 	"gorm.io/gorm"
 )
@@ -26,10 +26,10 @@ func NewGormTransaction(db *gorm.DB) transaction.Transaction {
 // If the function returns an error, the transaction is rolled back
 // Otherwise, the transaction is committed
 func (t *gormTransaction) Do(ctx context.Context, fn func(ctx context.Context) error) error {
-	// Use GORM's built-in Transaction method
-	// This provides automatic begin, commit, and rollback
+	if t.db == nil {
+		return fn(ctx)
+	}
 	return t.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Store transaction DB in context
 		txCtx := context.WithValue(ctx, TxKey{}, tx)
 		return fn(txCtx)
 	})

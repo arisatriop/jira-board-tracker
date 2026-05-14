@@ -18,8 +18,8 @@ Guide to set up development environment and workflow for contributing to Goilerp
 
 ```bash
 # Clone repository
-git clone https://github.com/arisatriop/project-tracker.git
-cd project-tracker
+git clone https://github.com/arisatriop/jira-board-tracker.git
+cd poc-smmf-board
 
 # Install dependencies
 go mod download
@@ -28,7 +28,7 @@ go mod download
 cp config/config.example.yaml config/config.yaml
 
 # Create database
-createdb project-tracker
+createdb poc-smmf-board
 
 # Run migrations
 go run cmd/migrate/main.go

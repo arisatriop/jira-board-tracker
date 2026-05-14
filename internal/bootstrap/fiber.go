@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"project-tracker/config"
-	"project-tracker/internal/delivery/http/middleware"
+	"github.com/arisatriop/jira-board-tracker/config"
+	"github.com/arisatriop/jira-board-tracker/internal/delivery/http/middleware"
 
 	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/fiber/v2"

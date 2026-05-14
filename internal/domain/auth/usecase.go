@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"project-tracker/pkg/jwt"
-	"project-tracker/pkg/logger"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/jwt"
+	"github.com/arisatriop/jira-board-tracker/pkg/logger"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"net/http"
 	"time"
 )

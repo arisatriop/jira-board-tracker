@@ -1,15 +1,17 @@
 package wire
 
 import (
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/domain/auth"
-	"project-tracker/internal/domain/bar"
-	"project-tracker/internal/domain/foo"
-	"project-tracker/internal/domain/role"
-	"project-tracker/internal/domain/user"
-	"project-tracker/internal/domain/userrole"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/auth"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/foo"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/role"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/user"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/userrole"
 
-	"project-tracker/internal/infrastructure/repository"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/repository"
+
+	"gorm.io/gorm"
 )
 
 // Repositories contains all repository implementations
@@ -24,7 +26,10 @@ type Repositories struct {
 
 // WireRepositories creates all repository implementations
 func WireRepositories(app *bootstrap.App) *Repositories {
-	db := app.DB.GDB
+	var db *gorm.DB
+	if app.DB != nil {
+		db = app.DB.GDB
+	}
 	return &Repositories{
 		AuthRepo:     repository.NewAuth(db),
 		RoleRepo:     repository.NewRole(db),

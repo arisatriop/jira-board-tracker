@@ -1,8 +1,8 @@
 package wire
 
 import (
-	grpcdelivery "project-tracker/internal/delivery/grpc"
-	grpchandler "project-tracker/internal/delivery/grpc/handler"
+	grpcdelivery "github.com/arisatriop/jira-board-tracker/internal/delivery/grpc"
+	grpchandler "github.com/arisatriop/jira-board-tracker/internal/delivery/grpc/handler"
 )
 
 type GrpcHandlers struct {

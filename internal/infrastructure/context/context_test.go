@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	auditctx "project-tracker/internal/infrastructure/context"
-	"project-tracker/pkg/constants"
+	auditctx "github.com/arisatriop/jira-board-tracker/internal/infrastructure/context"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
 )
 
 func TestAuditContext_WithAndWithoutTransaction(t *testing.T) {

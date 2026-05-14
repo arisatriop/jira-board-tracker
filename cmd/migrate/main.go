@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"project-tracker/internal/bootstrap"
-	"project-tracker/pkg/migration"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/pkg/migration"
 )
 
 func main() {

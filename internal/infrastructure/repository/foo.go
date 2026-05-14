@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"project-tracker/internal/domain/foo"
-	"project-tracker/internal/infrastructure/transaction"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/foo"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/transaction"
 
 	"gorm.io/gorm"
 )

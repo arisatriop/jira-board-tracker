@@ -1,8 +1,8 @@
 package request
 
 import (
-	dtorequest "project-tracker/internal/delivery/http/dto/request"
-	"project-tracker/internal/domain/foo"
+	dtorequest "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/request"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/foo"
 
 	"github.com/gofiber/fiber/v2"
 )

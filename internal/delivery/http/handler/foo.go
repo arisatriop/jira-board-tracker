@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"project-tracker/internal/domain/foo"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/foo"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"

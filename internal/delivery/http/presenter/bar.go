@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	dtoresponse "project-tracker/internal/delivery/http/dto/response"
-	"project-tracker/internal/domain/bar"
+	dtoresponse "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/response"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
 )
 
 // ToBarResponse converts a single bar entity to DTO

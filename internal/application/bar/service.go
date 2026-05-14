@@ -3,8 +3,8 @@ package bar
 import (
 	"context"
 	"fmt"
-	"project-tracker/internal/domain/bar"
-	"project-tracker/internal/domain/transaction"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/transaction"
 )
 
 // ApplicationService handles multi-domain orchestration

@@ -1,8 +1,8 @@
 package router
 
 import (
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/wire"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/wire"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -43,6 +43,7 @@ func (r *PartnerRouteRegistry) jira(v1 fiber.Router) {
 	jira := v1.Group("jira")
 	jira.Get("/boards", r.Wired.Handlers.Jira.GetBoards)
 	jira.Get("/boards/:id/summary", r.Wired.Handlers.Jira.GetBoardSummary)
+	jira.Get("/boards/:id/story-points", r.Wired.Handlers.Jira.GetBoardStoryPoints)
 }
 
 func (r *PartnerRouteRegistry) bar(v1 fiber.Router) {

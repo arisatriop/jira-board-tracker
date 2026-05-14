@@ -1,10 +1,10 @@
 package bootstrap
 
 import (
-	"project-tracker/config"
-	bootstrap "project-tracker/internal/bootstrap/database"
-	"project-tracker/pkg/logger"
 	"log/slog"
+	"github.com/arisatriop/jira-board-tracker/config"
+	bootstrap "github.com/arisatriop/jira-board-tracker/internal/bootstrap/database"
+	"github.com/arisatriop/jira-board-tracker/pkg/logger"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -46,14 +46,14 @@ func Init() *App {
 	redis := NewRedis(cfg, log)
 	validator := validator.New()
 
-	db := initializeDatabase(cfg, log)
+	// db := initializeDatabase(cfg, log)
 
 	return &App{
-		Config:         cfg,
-		Log:            log,
-		WebServer:      fiber,
-		GrpcServer:     NewGrpcServer(cfg),
-		DB:             db,
+		Config:     cfg,
+		Log:        log,
+		WebServer:  fiber,
+		GrpcServer: NewGrpcServer(cfg),
+		// DB:         db,
 		Redis:          redis,
 		Validator:      validator,
 		TracerProvider: tp,

@@ -1,10 +1,10 @@
 package handler
 
 import (
-	dtoresponse "project-tracker/internal/delivery/http/dto/response"
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/filesystem"
-	"project-tracker/pkg/response"
+	dtoresponse "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/response"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/filesystem"
+	"github.com/arisatriop/jira-board-tracker/pkg/response"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"

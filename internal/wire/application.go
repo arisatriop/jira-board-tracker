@@ -1,10 +1,12 @@
 package wire
 
 import (
-	"project-tracker/internal/application/bar"
-	"project-tracker/internal/application/register"
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/infrastructure/transaction"
+	"github.com/arisatriop/jira-board-tracker/internal/application/bar"
+	"github.com/arisatriop/jira-board-tracker/internal/application/register"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/transaction"
+
+	"gorm.io/gorm"
 )
 
 // ApplicationServices contains all application services for multi-domain orchestration
@@ -14,7 +16,11 @@ type ApplicationServices struct {
 }
 
 func WireApplicationServices(app *bootstrap.App, repos *Repositories, usecases *UseCases, infrastructure *Infrastructure) *ApplicationServices {
-	txManager := transaction.NewGormTransaction(app.DB.GDB)
+	var db *gorm.DB
+	if app.DB != nil {
+		db = app.DB.GDB
+	}
+	txManager := transaction.NewGormTransaction(db)
 
 	return &ApplicationServices{
 		BarSvc: bar.NewApplicationService(

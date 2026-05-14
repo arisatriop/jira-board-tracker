@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"project-tracker/pkg/filesystem"
+	"github.com/arisatriop/jira-board-tracker/pkg/filesystem"
 )
 
 type Config struct {
@@ -24,9 +24,20 @@ type Config struct {
 }
 
 type Jira struct {
-	BaseURL  string `mapstructure:"base_url"`
-	Email    string `mapstructure:"email"`
-	APIToken string `mapstructure:"api_token"`
+	BaseURL             string      `mapstructure:"base_url"`
+	Email               string      `mapstructure:"email"`
+	APIToken            string      `mapstructure:"api_token"`
+	Google              GoogleOAuth `mapstructure:"google"`
+	ClaudeRunnerURL     string      `mapstructure:"claude_runner_url"`
+	GithubRepoField     string      `mapstructure:"github_repo_field"`
+	GithubBaseField     string      `mapstructure:"github_base_field"`
+	GithubFeatureField  string      `mapstructure:"github_feature_field"`
+}
+
+type GoogleOAuth struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
 }
 
 type RateLimit struct {

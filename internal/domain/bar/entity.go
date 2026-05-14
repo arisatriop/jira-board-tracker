@@ -3,7 +3,7 @@ package bar
 import (
 	"strings"
 
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 )
 
 type Bar struct {

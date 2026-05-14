@@ -3,11 +3,11 @@ package wire
 import (
 	"context"
 
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/domain/auth"
-	"project-tracker/internal/infrastructure/cache"
-	"project-tracker/pkg/filesystem"
-	"project-tracker/pkg/jwt"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/auth"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/cache"
+	"github.com/arisatriop/jira-board-tracker/pkg/filesystem"
+	"github.com/arisatriop/jira-board-tracker/pkg/jwt"
 )
 
 // Infrastructure contains all infrastructure dependencies

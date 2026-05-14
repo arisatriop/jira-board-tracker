@@ -8,21 +8,21 @@
 #
 # Substitutions (configure per trigger in Cloud Build UI):
 #   _ENVIRONMENT       dev | stag | prod
-#   _GKE_CLUSTER       project-tracker-dev | project-tracker-stag | project-tracker-prod
+#   _GKE_CLUSTER       poc-smmf-board-dev | poc-smmf-board-stag | poc-smmf-board-prod
 #   _GKE_ZONE          asia-southeast2-a
 #   _CLOUD_SQL_INSTANCE project:region:instance
-#   _GSA_NAME          project-tracker
+#   _GSA_NAME          poc-smmf-board
 #   _GAR_LOCATION      asia-southeast2
-#   _GAR_REPOSITORY    project-tracker
+#   _GAR_REPOSITORY    poc-smmf-board
 
 substitutions:
   _ENVIRONMENT: dev
-  _GKE_CLUSTER: project-tracker-dev
+  _GKE_CLUSTER: poc-smmf-board-dev
   _GKE_ZONE: asia-southeast2-a
   _CLOUD_SQL_INSTANCE: project:region:instance
-  _GSA_NAME: project-tracker
+  _GSA_NAME: poc-smmf-board
   _GAR_LOCATION: asia-southeast2
-  _GAR_REPOSITORY: project-tracker
+  _GAR_REPOSITORY: poc-smmf-board
 
 steps:
   # ==============================
@@ -41,14 +41,14 @@ steps:
     args:
       - build
       - -t
-      - ${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/project-tracker:$SHORT_SHA
+      - ${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/poc-smmf-board:$SHORT_SHA
       - .
 
   - name: gcr.io/cloud-builders/docker
     id: push
     args:
       - push
-      - ${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/project-tracker:$SHORT_SHA
+      - ${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/poc-smmf-board:$SHORT_SHA
 
   # ==============================
   # DEPLOY TO GKE
@@ -63,7 +63,7 @@ steps:
           --zone ${_GKE_ZONE} \
           --project $PROJECT_ID
 
-        export IMAGE="${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/project-tracker:$SHORT_SHA"
+        export IMAGE="${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/poc-smmf-board:$SHORT_SHA"
         export COMMIT_SHA=$SHORT_SHA
         export PROJECT_ID=$PROJECT_ID
         export CLOUD_SQL_INSTANCE=${_CLOUD_SQL_INSTANCE}
@@ -74,7 +74,7 @@ steps:
           < deploy/k8s/serviceaccount.yaml | kubectl apply -f -
         envsubst '${IMAGE} ${COMMIT_SHA} ${CLOUD_SQL_INSTANCE}' \
           < deploy/k8s/deployment.${_ENVIRONMENT}.yaml | kubectl apply -f -
-        kubectl rollout status deployment/project-tracker -n apps --timeout=300s
+        kubectl rollout status deployment/poc-smmf-board -n apps --timeout=300s
 
 images:
-  - ${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/project-tracker:$SHORT_SHA
+  - ${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_GAR_REPOSITORY}/poc-smmf-board:$SHORT_SHA

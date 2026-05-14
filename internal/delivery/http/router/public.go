@@ -1,10 +1,10 @@
 package router
 
 import (
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/delivery/http/middleware"
-	"project-tracker/internal/wire"
-	"project-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/delivery/http/middleware"
+	"github.com/arisatriop/jira-board-tracker/internal/wire"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
 
 	"github.com/gofiber/fiber/v2"
 )

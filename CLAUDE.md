@@ -6,7 +6,7 @@ Go backend boilerplate using Clean Architecture. Provides a ready-to-use foundat
 ## Tech Stack
 - **Language**: Go 1.24
 - **Router**: GoFiber v2
-- **gRPC**: google.golang.org/grpc, proto contract at [project-tracker-proto](https://github.com/arisatriop/project-tracker-proto)
+- **gRPC**: google.golang.org/grpc, proto contract at [poc-smmf-board-proto](https://github.com/arisatriop/jira-board-tracker-proto)
 - **Database**: PostgreSQL via GORM + pgx, MySQL via GORM
 - **Cache**: Redis (go-redis/v9)
 - **Config**: Viper (YAML — `config/config.yaml`) + `.env` for secrets
@@ -44,10 +44,10 @@ storage/        Uploaded file storage
 - `wire/` — wires everything together
 
 ## gRPC
-- Proto contract lives in a separate repo: [github.com/arisatriop/project-tracker-proto](https://github.com/arisatriop/project-tracker-proto)
+- Proto contract lives in a separate repo: [github.com/arisatriop/jira-board-tracker-proto](https://github.com/arisatriop/jira-board-tracker-proto)
 - Server reflection is **disabled** — clients must import the proto module
 - gRPC port: `50051` (configured in `config/config.yaml` under `grpc.port`)
-- When adding a new gRPC service: add proto to project-tracker-proto → tag new version → `go get github.com/arisatriop/project-tracker-proto@<version>` → write handler → register → wire
+- When adding a new gRPC service: add proto to poc-smmf-board-proto → tag new version → `go get github.com/arisatriop/jira-board-tracker-proto@<version>` → write handler → register → wire
 - See [docs/guides/grpc.md](docs/guides/grpc.md) for full guide
 
 ## Development

@@ -2,9 +2,9 @@ package router
 
 import (
 	"context"
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/wire"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/wire"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"strings"
 	"time"
 
@@ -24,10 +24,6 @@ func NewRouteRegistry(app *bootstrap.App, wired *wire.ApplicationContainer) *Rou
 		App:   app,
 		Wired: wired,
 	}
-}
-
-func (r *RouteRegistry) index(ctx *fiber.Ctx) error {
-	return ctx.SendString("Welcome to Goilerplate!")
 }
 
 func (r *RouteRegistry) health(ctx *fiber.Ctx) error {
@@ -123,12 +119,25 @@ func (r *RouteRegistry) healthCheck(ctx *fiber.Ctx) error {
 // Register sets up all the routes and middleware for the application.
 func (r *RouteRegistry) Register() {
 	http := r.App.WebServer.Use(r.Wired.Middleware.Recover)
-	http.Get("/", r.index)
+	http.Get("/", r.Wired.Handlers.Jira.RootRedirect)
 	http.Get("/health", r.health)
 	http.Get("/healthcheck", r.healthCheck)
 	http.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
-	http.Get("/jira/boards", r.Wired.Handlers.Jira.BoardsView)
-	http.Get("/jira/boards/:id/remaining", r.Wired.Handlers.Jira.RemainingView)
+	http.Get("/jira/login", r.Wired.Handlers.Jira.LoginView)
+	http.Get("/jira/auth/google", r.Wired.Handlers.Jira.GoogleLogin)
+	http.Get("/jira/auth/callback", r.Wired.Handlers.Jira.GoogleCallback)
+	http.Get("/jira/logout", r.Wired.Handlers.Jira.GoogleLogout)
+
+	jiraView := http.Group("/jira", r.Wired.Handlers.Jira.SessionMiddleware())
+	jiraView.Get("/boards", r.Wired.Handlers.Jira.BoardsView)
+	jiraView.Get("/boards/:id/remaining", r.Wired.Handlers.Jira.RemainingView)
+	jiraView.Get("/boards/:id/issues", r.Wired.Handlers.Jira.IssuesView)
+	jiraView.Post("/boards/:id/execute", r.Wired.Handlers.Jira.ExecuteClaudeRunner)
+	jiraView.Get("/executions", r.Wired.Handlers.Jira.ListExecutions)
+	jiraView.Get("/executions/ticket/:key", r.Wired.Handlers.Jira.TicketExecutionsView)
+	jiraView.Get("/executions/:id", r.Wired.Handlers.Jira.ExecutionDetailView)
+	jiraView.Get("/executions/:id/data", r.Wired.Handlers.Jira.GetExecutionData)
+	jiraView.Get("/ticket/:key", r.Wired.Handlers.Jira.GetTicketDetail)
 
 	if strings.ToLower(r.App.Config.App.Env) != "production" {
 		http.Static("/swagger-ui", ".swagger")

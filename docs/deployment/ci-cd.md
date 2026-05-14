@@ -183,8 +183,8 @@ gh run view <run-id> --log
 ### Check Deployment Status
 ```bash
 kubectl get deployment -n <namespace>
-kubectl rollout status deployment/project-tracker -n <namespace>
-kubectl logs -f deployment/project-tracker -n <namespace>
+kubectl rollout status deployment/poc-smmf-board -n <namespace>
+kubectl logs -f deployment/poc-smmf-board -n <namespace>
 ```
 
 ---

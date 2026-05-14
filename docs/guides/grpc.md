@@ -7,10 +7,10 @@ This project runs a gRPC server alongside the HTTP server. The two share the sam
 ## Proto Repository
 
 Proto files live in a **separate repository**:
-[github.com/arisatriop/project-tracker-proto](https://github.com/arisatriop/project-tracker-proto)
+[github.com/arisatriop/jira-board-tracker-proto](https://github.com/arisatriop/jira-board-tracker-proto)
 
 ```
-project-tracker-proto/
+poc-smmf-board-proto/
   buf.yaml          # buf module config, lint rules, BSR dependencies
   buf.gen.yaml      # code generation config (plugins + output paths)
   buf.lock          # pinned BSR dependency versions
@@ -22,7 +22,7 @@ project-tracker-proto/
   hello/v1/
 ```
 
-This repo is the single source of truth for all service contracts. Both the server (project-tracker) and any client service import from here.
+This repo is the single source of truth for all service contracts. Both the server (poc-smmf-board) and any client service import from here.
 
 ---
 
@@ -44,9 +44,9 @@ The gRPC server only starts when `enabled: true`. The HTTP server always starts 
 
 Adding a new service (e.g. `baz`) involves two repos.
 
-### Step 1 — Add proto to project-tracker-proto
+### Step 1 — Add proto to poc-smmf-board-proto
 
-In the `project-tracker-proto` repo, create `baz/v1/baz.proto`:
+In the `poc-smmf-board-proto` repo, create `baz/v1/baz.proto`:
 
 ```proto
 syntax = "proto3";
@@ -56,7 +56,7 @@ package baz.v1;
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "github.com/arisatriop/project-tracker-proto/baz/v1";
+option go_package = "github.com/arisatriop/jira-board-tracker-proto/baz/v1";
 
 service BazService {
   rpc CreateBaz (CreateBazRequest) returns (Baz);
@@ -77,17 +77,17 @@ message Baz {
 Then generate, commit, and tag a new version:
 
 ```bash
-# in project-tracker-proto/
+# in poc-smmf-board-proto/
 buf generate
 git add -A && git commit -m "feat: add BazService proto"
 git tag v0.2.0 && git push origin main --tags
 ```
 
-### Step 2 — Update project-tracker to use the new version
+### Step 2 — Update poc-smmf-board to use the new version
 
 ```bash
-# in project-tracker/
-go get github.com/arisatriop/project-tracker-proto@v0.2.0
+# in poc-smmf-board/
+go get github.com/arisatriop/jira-board-tracker-proto@v0.2.0
 go mod tidy
 ```
 
@@ -101,9 +101,9 @@ package grpchandler
 import (
     "context"
 
-    bazdomain "project-tracker/internal/domain/baz"
-    "project-tracker/pkg/grpcresponse"
-    pb "github.com/arisatriop/project-tracker-proto/baz/v1"
+    bazdomain "poc-smmf-board/internal/domain/baz"
+    "poc-smmf-board/pkg/grpcresponse"
+    pb "github.com/arisatriop/jira-board-tracker-proto/baz/v1"
 
     "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -136,7 +136,7 @@ func toProtoBaz(e *bazdomain.Baz) *pb.Baz {
 In `internal/delivery/grpc/server.go`:
 
 ```go
-import bazpb "github.com/arisatriop/project-tracker-proto/baz/v1"
+import bazpb "github.com/arisatriop/jira-board-tracker-proto/baz/v1"
 
 type ServiceRegistry struct {
     // ...
@@ -224,7 +224,7 @@ find ~/.cache/buf -name "field_behavior.proto" 2>/dev/null | head -1
 Export for convenience:
 
 ```bash
-export GOILERPLATE_PROTO=~/Documents/work/others/project-tracker-proto
+export GOILERPLATE_PROTO=~/Documents/work/others/poc-smmf-board-proto
 export GOOGLEAPIS=~/.cache/buf/v3/modules/b5/buf.build/googleapis/googleapis/<commit>/files
 ```
 
@@ -283,7 +283,7 @@ Client services import the same proto module and connect directly:
 
 ```go
 import (
-    barpb "github.com/arisatriop/project-tracker-proto/bar/v1"
+    barpb "github.com/arisatriop/jira-board-tracker-proto/bar/v1"
     "google.golang.org/grpc"
     "google.golang.org/grpc/credentials/insecure"
     "google.golang.org/grpc/metadata"

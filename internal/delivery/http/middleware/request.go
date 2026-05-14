@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 	"encoding/json"
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"log/slog"
 	"mime"
 	"os"

@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: project-tracker
+  name: poc-smmf-board
   namespace: apps          # ← FIXED: konsisten dengan Service & Ingress
   labels:
-    app: project-tracker
+    app: poc-smmf-board
     environment: production
 spec:
   replicas: 1
@@ -15,14 +15,14 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: project-tracker
+      app: poc-smmf-board
   template:
     metadata:
       labels:
-        app: project-tracker
+        app: poc-smmf-board
         version: "${COMMIT_SHA}"
     spec:
-      serviceAccountName: project-tracker
+      serviceAccountName: poc-smmf-board
       imagePullSecrets:
         - name: ghcr-pull-secret
       securityContext:
@@ -68,7 +68,7 @@ spec:
 
         envFrom:
         - secretRef:
-            name: project-tracker-secret
+            name: poc-smmf-board-secret
 
         startupProbe:           # ← ADDED: cegah liveness kill pod saat init
           httpGet:
@@ -106,7 +106,7 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: project-tracker-config
+          name: poc-smmf-board-config
           items:
           - key: config.yaml
             path: config.yaml
@@ -114,14 +114,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: project-tracker-service
+  name: poc-smmf-board-service
   namespace: apps
   labels:
-    app: project-tracker
+    app: poc-smmf-board
     api-group: public
 spec:
   selector:
-    app: project-tracker
+    app: poc-smmf-board
   ports:
   - protocol: TCP
     port: 80
@@ -134,45 +134,45 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: project-tracker-ingress
+  name: poc-smmf-board-ingress
   namespace: apps
   labels:
-    app: project-tracker
+    app: poc-smmf-board
   annotations:
     kubernetes.io/ingress.class: "gce"
     # Optional: force HTTPS redirect
-    # networking.gke.io/managed-certificates: "project-tracker-cert"
+    # networking.gke.io/managed-certificates: "poc-smmf-board-cert"
     # kubernetes.io/ingress.allow-http: "false"
 spec:
   rules:
-  - host: project-tracker.sidejob.fun
+  - host: poc-smmf-board.sidejob.fun
     http:
       paths:
       - path: /api
         pathType: Prefix
         backend:
           service:
-            name: project-tracker-service
+            name: poc-smmf-board-service
             port:
               number: 80
       - path: /partner
         pathType: Prefix
         backend:
           service:
-            name: project-tracker-service
+            name: poc-smmf-board-service
             port:
               number: 80
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: project-tracker-hpa
+  name: poc-smmf-board-hpa
   namespace: apps
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: project-tracker
+    name: poc-smmf-board
   minReplicas: 1
   maxReplicas: 5
   metrics:

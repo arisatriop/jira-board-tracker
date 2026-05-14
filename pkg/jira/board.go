@@ -62,6 +62,20 @@ type IssueFields struct {
 	StoryPoints *float64     `json:"customfield_10032"`
 }
 
+type IssueDetail struct {
+	Key            string `json:"key"`
+	Summary        string `json:"summary"`
+	Description    string `json:"description"`
+	Type           string `json:"type"`
+	Status         string `json:"status"`
+	Assignee       string `json:"assignee"`
+	Priority       string `json:"priority"`
+	StoryPoints    string `json:"story_points"`
+	GithubRepo     string `json:"github_repo"`
+	GithubBase     string `json:"github_base"`
+	GithubFeature  string `json:"github_feature"`
+}
+
 type IssueStatus struct {
 	Name           string         `json:"name"`
 	StatusCategory StatusCategory `json:"statusCategory"`
@@ -93,6 +107,11 @@ type issuesResponse struct {
 type SprintStats struct {
 	Total int
 	Done  int
+}
+
+type BoardStoryPointStats struct {
+	TotalSP float64 `json:"total_sp"`
+	StorySP float64 `json:"story_sp"`
 }
 
 type AssigneeStat struct {
@@ -158,6 +177,23 @@ func (c *Client) GetSprintStats(ctx context.Context, sprintID int) (SprintStats,
 	return SprintStats{Total: total.Total, Done: done.Total}, nil
 }
 
+func (c *Client) GetLastFutureSprint(ctx context.Context, boardID int) (*Sprint, error) {
+	var sprints sprintsResponse
+	if err := c.do(ctx, "GET", fmt.Sprintf("/rest/agile/1.0/board/%d/sprint?state=future", boardID), &sprints); err != nil {
+		return nil, err
+	}
+	if len(sprints.Values) == 0 {
+		return nil, nil
+	}
+	last := &sprints.Values[0]
+	for i := 1; i < len(sprints.Values); i++ {
+		if sprints.Values[i].ID > last.ID {
+			last = &sprints.Values[i]
+		}
+	}
+	return last, nil
+}
+
 func (c *Client) GetActiveSprint(ctx context.Context, boardID int) (*Sprint, error) {
 	var sprints sprintsResponse
 	if err := c.do(ctx, "GET", fmt.Sprintf("/rest/agile/1.0/board/%d/sprint?state=active", boardID), &sprints); err != nil {
@@ -169,6 +205,51 @@ func (c *Client) GetActiveSprint(ctx context.Context, boardID int) (*Sprint, err
 	return &sprints.Values[0], nil
 }
 
+func (c *Client) GetBoardStoryPoints(ctx context.Context, boardID int) (BoardStoryPointStats, error) {
+	var stats BoardStoryPointStats
+
+	// Resolve issue scope: active sprint → last future sprint → board fallback
+	var baseURL string
+	var board Board
+	if err := c.do(ctx, "GET", fmt.Sprintf("/rest/agile/1.0/board/%d", boardID), &board); err != nil {
+		return stats, fmt.Errorf("fetching board: %w", err)
+	}
+	if board.Type == "scrum" {
+		var sprints sprintsResponse
+		if err := c.do(ctx, "GET", fmt.Sprintf("/rest/agile/1.0/board/%d/sprint?state=active", boardID), &sprints); err == nil && len(sprints.Values) > 0 {
+			baseURL = fmt.Sprintf("/rest/agile/1.0/sprint/%d/issue", sprints.Values[0].ID)
+		} else if future, err := c.GetLastFutureSprint(ctx, boardID); err == nil && future != nil {
+			baseURL = fmt.Sprintf("/rest/agile/1.0/sprint/%d/issue", future.ID)
+		}
+	}
+	if baseURL == "" {
+		baseURL = fmt.Sprintf("/rest/agile/1.0/board/%d/issue", boardID)
+	}
+
+	startAt := 0
+	const perPage = 1000
+	for {
+		var page issuesResponse
+		path := fmt.Sprintf("%s?maxResults=%d&startAt=%d&fields=customfield_10032,issuetype", baseURL, perPage, startAt)
+		if err := c.do(ctx, "GET", path, &page); err != nil {
+			return stats, err
+		}
+		for _, issue := range page.Issues {
+			if issue.Fields.StoryPoints != nil {
+				stats.TotalSP += *issue.Fields.StoryPoints
+				if issue.Fields.IssueType.Name == "Story" {
+					stats.StorySP += *issue.Fields.StoryPoints
+				}
+			}
+		}
+		if len(page.Issues) == 0 || startAt+len(page.Issues) >= page.Total {
+			break
+		}
+		startAt += len(page.Issues)
+	}
+	return stats, nil
+}
+
 func (c *Client) GetBoardSummary(ctx context.Context, boardID int) (*BoardSummary, error) {
 	var board Board
 	if err := c.do(ctx, "GET", fmt.Sprintf("/rest/agile/1.0/board/%d", boardID), &board); err != nil {
@@ -177,11 +258,13 @@ func (c *Client) GetBoardSummary(ctx context.Context, boardID int) (*BoardSummar
 
 	summary := &BoardSummary{Board: board}
 
-	// Fetch active sprint first so we can scope issues to it
+	// Fetch active sprint first; fall back to last future sprint if none is running
 	if board.Type == "scrum" {
 		var sprints sprintsResponse
 		if err := c.do(ctx, "GET", fmt.Sprintf("/rest/agile/1.0/board/%d/sprint?state=active", boardID), &sprints); err == nil && len(sprints.Values) > 0 {
 			summary.ActiveSprint = &sprints.Values[0]
+		} else {
+			summary.ActiveSprint, _ = c.GetLastFutureSprint(ctx, boardID)
 		}
 	}
 

@@ -1,7 +1,7 @@
 package bar
 
 import (
-	"project-tracker/pkg/pagination"
+	"github.com/arisatriop/jira-board-tracker/pkg/pagination"
 )
 
 type Filter struct {

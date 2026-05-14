@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	dtoresponse "project-tracker/internal/delivery/http/dto/response"
-	"project-tracker/internal/domain/foo"
+	dtoresponse "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/response"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/foo"
 )
 
 // ToFooResponse converts a single foo entity to DTO

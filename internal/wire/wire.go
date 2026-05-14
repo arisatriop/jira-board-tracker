@@ -1,8 +1,8 @@
 package wire
 
 import (
-	"project-tracker/internal/bootstrap"
-	"project-tracker/pkg/jira"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/pkg/jira"
 )
 
 // ApplicationContainer holds all wired dependencies

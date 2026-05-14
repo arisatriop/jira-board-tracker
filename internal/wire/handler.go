@@ -3,13 +3,13 @@ package wire
 import (
 	"time"
 
-	"project-tracker/config"
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/delivery/http/handler"
-	"project-tracker/internal/delivery/http/middleware"
-	"project-tracker/internal/domain/auth"
-	pkgcache "project-tracker/pkg/cache"
-	"project-tracker/pkg/jira"
+	"github.com/arisatriop/jira-board-tracker/config"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/delivery/http/handler"
+	"github.com/arisatriop/jira-board-tracker/internal/delivery/http/middleware"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/auth"
+	pkgcache "github.com/arisatriop/jira-board-tracker/pkg/cache"
+	"github.com/arisatriop/jira-board-tracker/pkg/jira"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -44,7 +44,7 @@ func WireHandlers(app *bootstrap.App, useCases *UseCases, appServices *Applicati
 		Upload: handler.NewUpload(app.Validator, infrastructure.FilesystemManager, app.Config.FileSystem.MaxFileSize),
 		Foo:    handler.NewFoo(app.Validator, useCases.FooUC),
 		Bar:    handler.NewBar(app.Validator, useCases.BarUC),
-		Jira:   handler.NewJira(jiraClient, app.Config.Apikeys["default"]),
+		Jira:   handler.NewJira(jiraClient, app.Config.Apikeys["default"], app.Config.Jira.Google, app.Config.Jira.ClaudeRunnerURL, app.Config.Jira.GithubRepoField, app.Config.Jira.GithubBaseField, app.Config.Jira.GithubFeatureField),
 	}
 }
 

@@ -1,9 +1,9 @@
 package request
 
 import (
-	dtorequest "project-tracker/internal/delivery/http/dto/request"
-	"project-tracker/internal/domain/bar"
-	"project-tracker/pkg/pagination"
+	dtorequest "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/request"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/pkg/pagination"
 
 	"github.com/gofiber/fiber/v2"
 )

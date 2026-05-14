@@ -1,11 +1,11 @@
 package wire
 
 import (
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/domain/auth"
-	"project-tracker/internal/domain/bar"
-	"project-tracker/internal/domain/foo"
-	"project-tracker/pkg/jwt"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/auth"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/foo"
+	"github.com/arisatriop/jira-board-tracker/pkg/jwt"
 )
 
 // UseCases contains all use case implementations

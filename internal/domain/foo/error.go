@@ -1,6 +1,6 @@
 package foo
 
-import "project-tracker/pkg/utils"
+import "github.com/arisatriop/jira-board-tracker/pkg/utils"
 
 var (
 	// Business logic errors

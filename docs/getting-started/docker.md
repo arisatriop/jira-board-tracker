@@ -57,7 +57,7 @@ services:
       - APP_ENV=local
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=project-tracker
+      - DB_NAME=poc-smmf-board
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
       - REDIS_HOST=redis:6379
@@ -70,7 +70,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=project-tracker
+      - POSTGRES_DB=poc-smmf-board
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
@@ -119,10 +119,10 @@ docker compose up -d --build
 **PostgreSQL:**
 ```bash
 # From host
-psql -h localhost -U postgres -d project-tracker
+psql -h localhost -U postgres -d poc-smmf-board
 
 # From app container
-docker compose exec app psql -h postgres -U postgres -d project-tracker
+docker compose exec app psql -h postgres -U postgres -d poc-smmf-board
 ```
 
 **Redis:**
@@ -146,7 +146,7 @@ docker compose exec app bash
 make docker-build
 
 # Using Docker directly
-docker build -t project-tracker:latest .
+docker build -t poc-smmf-board:latest .
 ```
 
 Uses `Dockerfile` (optimized production build, no hot reload).
@@ -162,7 +162,7 @@ docker run -p 3000:3000 \
   -e DB_HOST=your-db-host \
   -e DB_PASSWORD=your-password \
   -e REDIS_HOST=your-redis-host \
-  project-tracker:latest
+  poc-smmf-board:latest
 ```
 
 ### Production-Grade Setup
@@ -256,16 +256,16 @@ CMD ["air"]
 
 ```bash
 # Build
-docker build -t project-tracker:1.0 .
+docker build -t poc-smmf-board:1.0 .
 
 # Run
-docker run -p 3000:3000 project-tracker:1.0
+docker run -p 3000:3000 poc-smmf-board:1.0
 
 # List images
 docker images
 
 # Remove image
-docker rmi project-tracker:1.0
+docker rmi poc-smmf-board:1.0
 
 # Compose commands
 docker compose up -d
@@ -289,7 +289,7 @@ lsof -i :3000
 kill -9 <PID>
 
 # Or use different port
-docker run -p 3001:3000 project-tracker
+docker run -p 3001:3000 poc-smmf-board
 ```
 
 ### Volume Permission Issues (Mac/Windows)

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	auditctx "project-tracker/internal/infrastructure/context"
+	auditctx "github.com/arisatriop/jira-board-tracker/internal/infrastructure/context"
 )
 
 type Role struct {

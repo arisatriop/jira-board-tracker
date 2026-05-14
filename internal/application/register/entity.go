@@ -1,7 +1,7 @@
 package register
 
 import (
-	"project-tracker/internal/domain/user"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/user"
 )
 
 type Register struct {

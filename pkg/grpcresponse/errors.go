@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/logger"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/logger"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

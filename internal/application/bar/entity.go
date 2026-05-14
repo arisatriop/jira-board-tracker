@@ -1,7 +1,7 @@
 package bar
 
 import (
-	"project-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
 )
 
 type Exp struct {

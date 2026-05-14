@@ -118,21 +118,21 @@ See: [Kubernetes Deployment Guide](./kubernetes.md)
 
 **Create ConfigMap from file:**
 ```bash
-kubectl create configmap project-tracker-config -n <namespace> \
+kubectl create configmap poc-smmf-board-config -n <namespace> \
   --from-file=config.yaml=./config/config.example.yaml \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 **Create Secret from .env file:**
 ```bash
-kubectl create secret generic project-tracker-secret -n <namespace> \
+kubectl create secret generic poc-smmf-board-secret -n <namespace> \
   --from-env-file=./config/.env \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 **Create Secret from literal values:**
 ```bash
-kubectl create secret generic project-tracker-secret -n <namespace> \
+kubectl create secret generic poc-smmf-board-secret -n <namespace> \
   --from-literal=DB_HOST=prod-db \
   --from-literal=DB_PASSWORD=secret123 \
   --dry-run=client -o yaml | kubectl apply -f -
@@ -171,7 +171,7 @@ SERVER_PORT=3000
 DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=project-tracker
+DB_NAME=poc-smmf-board
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 

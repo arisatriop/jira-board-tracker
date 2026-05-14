@@ -1,10 +1,10 @@
 services:
   app:
-    image: project-tracker
+    image: poc-smmf-board
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: project-tracker
+    container_name: poc-smmf-board
     volumes:
       - .:/app
     ports:

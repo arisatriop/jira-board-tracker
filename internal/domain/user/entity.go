@@ -1,7 +1,7 @@
 package user
 
 import (
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 
 	"github.com/google/uuid"
 )

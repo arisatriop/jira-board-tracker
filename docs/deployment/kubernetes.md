@@ -22,7 +22,7 @@ Before deployment, set up ConfigMap for non-sensitive values and Secret for sens
 **Create ConfigMap from file:**
 
 ```bash
-kubectl create configmap project-tracker-config -n <namespace> \
+kubectl create configmap poc-smmf-board-config -n <namespace> \
   --from-file=config.yaml=./config/config.example.yaml \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
@@ -34,7 +34,7 @@ kubectl create configmap project-tracker-config -n <namespace> \
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: project-tracker-config
+  name: poc-smmf-board-config
   namespace: default
 data:
   config.yaml: |
@@ -66,7 +66,7 @@ kubectl apply -f configmap.yaml
 **Create Secret from env file:**
 
 ```bash
-kubectl create secret generic project-tracker-secret -n <namespace> \
+kubectl create secret generic poc-smmf-board-secret -n <namespace> \
   --from-env-file=./config/.env \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
@@ -78,10 +78,10 @@ kubectl create secret generic project-tracker-secret -n <namespace> \
 If there's no `.env` file, create from literal values:
 
 ```bash
-kubectl create secret generic project-tracker-secret -n <namespace> \
+kubectl create secret generic poc-smmf-board-secret -n <namespace> \
   --from-literal=DB_HOST=your-db-host \
   --from-literal=DB_PORT=5432 \
-  --from-literal=DB_NAME=project-tracker \
+  --from-literal=DB_NAME=poc-smmf-board \
   --from-literal=DB_USERNAME=postgres \
   --from-literal=DB_PASSWORD=your-secret-password \
   --from-literal=REDIS_HOST=your-redis-host:6379 \
@@ -109,20 +109,20 @@ Edit deployment file and update container image:
 
 ```yaml
 containers:
-  - name: project-tracker
-    image: your-registry/project-tracker:latest  # Update this
+  - name: poc-smmf-board
+    image: your-registry/poc-smmf-board:latest  # Update this
     ports:
       - containerPort: 3000
     envFrom:
       - secretRef:
-          name: project-tracker-secret
+          name: poc-smmf-board-secret
     volumeMounts:
       - name: config
         mountPath: /app/config
   volumes:
     - name: config
       configMap:
-        name: project-tracker-config
+        name: poc-smmf-board-config
 ```
 
 ### 2. Apply Deployment
@@ -155,7 +155,7 @@ kubectl logs <pod-name> -n <namespace>
 
 ### Port Forward (Testing)
 ```bash
-kubectl port-forward svc/project-tracker 3000:3000 -n <namespace>
+kubectl port-forward svc/poc-smmf-board 3000:3000 -n <namespace>
 curl http://localhost:3000/health
 ```
 
@@ -163,7 +163,7 @@ curl http://localhost:3000/health
 ```bash
 kubectl get configmap -n <namespace>
 kubectl get secret -n <namespace>
-kubectl describe configmap project-tracker-config -n <namespace>
+kubectl describe configmap poc-smmf-board-config -n <namespace>
 ```
 
 ---
@@ -172,8 +172,8 @@ kubectl describe configmap project-tracker-config -n <namespace>
 
 ### Update Image
 ```bash
-kubectl set image deployment/project-tracker \
-  project-tracker=your-registry/project-tracker:v1.1.0 \
+kubectl set image deployment/poc-smmf-board \
+  poc-smmf-board=your-registry/poc-smmf-board:v1.1.0 \
   -n <namespace>
 ```
 
@@ -182,13 +182,13 @@ Edit and reapply:
 ```bash
 kubectl apply -f configmap.yaml
 # Restart pods to load new config
-kubectl rollout restart deployment/project-tracker -n <namespace>
+kubectl rollout restart deployment/poc-smmf-board -n <namespace>
 ```
 
 ### Rollback
 ```bash
-kubectl rollout history deployment/project-tracker -n <namespace>
-kubectl rollout undo deployment/project-tracker -n <namespace>
+kubectl rollout history deployment/poc-smmf-board -n <namespace>
+kubectl rollout undo deployment/poc-smmf-board -n <namespace>
 ```
 
 ---

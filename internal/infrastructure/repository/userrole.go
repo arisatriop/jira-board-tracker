@@ -2,11 +2,11 @@ package repository
 
 import (
 	"context"
-	"project-tracker/internal/domain/userrole"
-	"project-tracker/internal/infrastructure/model"
-	"project-tracker/internal/infrastructure/transaction"
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/userrole"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/model"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/transaction"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 
 	"gorm.io/gorm"
 )

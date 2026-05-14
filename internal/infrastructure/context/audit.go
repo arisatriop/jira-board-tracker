@@ -3,7 +3,7 @@ package context
 import (
 	"context"
 
-	"project-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
 )
 
 // AuditInfo contains information for audit fields

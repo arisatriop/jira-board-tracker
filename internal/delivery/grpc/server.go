@@ -1,7 +1,7 @@
 package grpcdelivery
 
 import (
-	grpchandler "project-tracker/internal/delivery/grpc/handler"
+	grpchandler "github.com/arisatriop/jira-board-tracker/internal/delivery/grpc/handler"
 
 	barpb "github.com/arisatriop/goilerplate-proto/bar/v1"
 	foopb "github.com/arisatriop/goilerplate-proto/foo/v1"

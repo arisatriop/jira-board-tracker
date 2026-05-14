@@ -1,8 +1,8 @@
 package router
 
 import (
-	"project-tracker/internal/bootstrap"
-	"project-tracker/internal/wire"
+	"github.com/arisatriop/jira-board-tracker/internal/bootstrap"
+	"github.com/arisatriop/jira-board-tracker/internal/wire"
 
 	"github.com/gofiber/fiber/v2"
 )

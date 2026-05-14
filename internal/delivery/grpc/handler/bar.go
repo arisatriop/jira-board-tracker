@@ -3,9 +3,9 @@ package grpchandler
 import (
 	"context"
 
-	bardomain "project-tracker/internal/domain/bar"
-	"project-tracker/pkg/grpcresponse"
-	"project-tracker/pkg/pagination"
+	bardomain "github.com/arisatriop/jira-board-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/pkg/grpcresponse"
+	"github.com/arisatriop/jira-board-tracker/pkg/pagination"
 
 	pb "github.com/arisatriop/goilerplate-proto/bar/v1"
 

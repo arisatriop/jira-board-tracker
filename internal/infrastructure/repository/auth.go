@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"project-tracker/internal/domain/auth"
-	"project-tracker/internal/infrastructure/model"
-	"project-tracker/pkg/utils"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/auth"
+	"github.com/arisatriop/jira-board-tracker/internal/infrastructure/model"
+	"github.com/arisatriop/jira-board-tracker/pkg/utils"
 	"time"
 
 	"gorm.io/gorm"

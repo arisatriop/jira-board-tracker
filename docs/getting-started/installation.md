@@ -20,8 +20,8 @@ Before starting, make sure you have installed:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/arisatriop/project-tracker.git
-cd project-tracker
+git clone https://github.com/arisatriop/jira-board-tracker.git
+cd poc-smmf-board
 ```
 
 ### 2. Install Dependencies
@@ -43,7 +43,7 @@ db:
   driver: postgres
   host: localhost
   port: 5432
-  name: project-tracker      # Adjust to your database name
+  name: poc-smmf-board      # Adjust to your database name
   username: postgres     # Adjust to your username
   password: postgres     # Adjust to your password
 
@@ -55,7 +55,7 @@ redis:
 ### 4. Create Database
 
 ```bash
-createdb project-tracker
+createdb poc-smmf-board
 ```
 
 ### 5. Run Migrations
@@ -121,7 +121,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ## 📁 Project Structure
 
 ```
-project-tracker/
+poc-smmf-board/
 ├── cmd/               # Application entry points
 │   ├── migrate/       # Database migrations
 │   ├── server/        # HTTP server
@@ -221,7 +221,7 @@ sudo systemctl start postgresql
 **Create Database:**
 
 ```bash
-createdb project-tracker
+createdb poc-smmf-board
 ```
 
 ### MySQL (Alternative)
@@ -233,14 +233,14 @@ db:
   driver: mysql
   host: localhost
   port: 3306
-  name: project-tracker
+  name: poc-smmf-board
   username: root
   password: your_password
 ```
 
 Create database:
 ```bash
-mysql -u root -p -e "CREATE DATABASE project-tracker;"
+mysql -u root -p -e "CREATE DATABASE poc-smmf-board;"
 ```
 
 ---
@@ -256,7 +256,7 @@ db:
   driver: postgres
   host: localhost
   port: 5432
-  name: project-tracker
+  name: poc-smmf-board
   username: postgres
   password: postgres
 
@@ -302,7 +302,7 @@ server:
 Check credentials in `config/config.yaml`:
 
 ```bash
-psql -h localhost -U postgres -d project-tracker
+psql -h localhost -U postgres -d poc-smmf-board
 ```
 
 ### Redis Connection Error
@@ -343,4 +343,4 @@ go run cmd/migrate/main.go down
 
 - Check [Main README](../../README.md)
 - See [Documentation Index](../README.md)
-- Open [GitHub Issues](https://github.com/arisatriop/project-tracker/issues)
+- Open [GitHub Issues](https://github.com/arisatriop/jira-board-tracker/issues)

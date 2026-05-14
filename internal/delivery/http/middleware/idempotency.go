@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/response"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/response"
 
 	"github.com/gofiber/fiber/v2"
 )

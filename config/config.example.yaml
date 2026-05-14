@@ -1,6 +1,6 @@
 app:
   env: dev
-  name: project-tracker
+  name: poc-smmf-board
   version: 1.0.0
   description: Internal tool for monitoring Jira boards, sprint progress, and remaining work.
 
@@ -48,7 +48,7 @@ jwt:
   refresh_secret: <JWT_REFRESH_SECRET_KEY>
   access_token_expiry: 15m
   refresh_token_expiry: 168h # 1 week
-  issuer: project-tracker
+  issuer: poc-smmf-board
 
 log:
   level: debug
@@ -122,3 +122,7 @@ jira:
   base_url: https://<YOUR_DOMAIN>.atlassian.net
   email: <YOUR_JIRA_EMAIL>
   api_token: <YOUR_JIRA_API_TOKEN>
+  claude_runner_url: "http://localhost:8081"
+  github_repo_field: "customfield_10050"     # Jira custom field ID for GitHub Repo
+  github_base_field: "customfield_10051"     # Jira custom field ID for Base Branch (readonly)
+  github_feature_field: "customfield_10052"  # Jira custom field ID for Feature Branch (editable, falls back to ticket key)

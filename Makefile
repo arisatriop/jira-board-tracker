@@ -72,19 +72,19 @@ lint:
 # Docker commands (if you use Docker)
 docker-build:
 	@echo "Building Docker image..."
-	docker build -t project-tracker .
+	docker build -t poc-smmf-board .
 
 docker-run:
 	@echo "Running Docker container..."
-	docker run -p 3000:3000 project-tracker
+	docker run -p 3000:3000 poc-smmf-board
 
 docker-build-local:
 	@echo "Building Local Docker image..."
-	docker build -f Dockerfile.local -t project-tracker .
+	docker build -f Dockerfile.local -t poc-smmf-board .
 
 docker-run-local:
 	@echo "Running Local Docker container..."
-	docker run -p 3000:3000 -v $(shell pwd):/app project-tracker
+	docker run -p 3000:3000 -v $(shell pwd):/app poc-smmf-board
 
 up:
 	@echo "Starting development environment..."

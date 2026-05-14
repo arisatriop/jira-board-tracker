@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"project-tracker/config"
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/response"
+	"github.com/arisatriop/jira-board-tracker/config"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/response"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"

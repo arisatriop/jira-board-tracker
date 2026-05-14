@@ -1,13 +1,13 @@
 package handler
 
 import (
-	dtorequest "project-tracker/internal/delivery/http/dto/request"
-	"project-tracker/internal/delivery/http/presenter"
-	"project-tracker/internal/delivery/http/request"
-	"project-tracker/internal/domain/bar"
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/pagination"
-	"project-tracker/pkg/response"
+	dtorequest "github.com/arisatriop/jira-board-tracker/internal/delivery/http/dto/request"
+	"github.com/arisatriop/jira-board-tracker/internal/delivery/http/presenter"
+	"github.com/arisatriop/jira-board-tracker/internal/delivery/http/request"
+	"github.com/arisatriop/jira-board-tracker/internal/domain/bar"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/pagination"
+	"github.com/arisatriop/jira-board-tracker/pkg/response"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"

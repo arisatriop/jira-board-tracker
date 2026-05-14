@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"project-tracker/pkg/constants"
-	"project-tracker/pkg/response"
+	"github.com/arisatriop/jira-board-tracker/pkg/constants"
+	"github.com/arisatriop/jira-board-tracker/pkg/response"
 	"log/slog"
 	"runtime/debug"
 
