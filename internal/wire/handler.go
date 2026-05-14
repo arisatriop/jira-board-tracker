@@ -44,7 +44,7 @@ func WireHandlers(app *bootstrap.App, useCases *UseCases, appServices *Applicati
 		Upload: handler.NewUpload(app.Validator, infrastructure.FilesystemManager, app.Config.FileSystem.MaxFileSize),
 		Foo:    handler.NewFoo(app.Validator, useCases.FooUC),
 		Bar:    handler.NewBar(app.Validator, useCases.BarUC),
-		Jira:   handler.NewJira(jiraClient, app.Config.Apikeys["default"], app.Config.Jira.Google, app.Config.Jira.ClaudeRunnerURL, app.Config.Jira.GithubRepoField, app.Config.Jira.GithubBaseField, app.Config.Jira.GithubFeatureField),
+		Jira:   handler.NewJira(jiraClient, app.Config.Apikeys["default"], app.Config.Jira.Google, app.Config.App.Env, app.Config.Jira.ClaudeRunnerURL, app.Config.Jira.GithubRepoField, app.Config.Jira.GithubBaseField, app.Config.Jira.GithubFeatureField),
 	}
 }
 

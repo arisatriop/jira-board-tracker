@@ -34,6 +34,7 @@ type Jira struct {
 	apiKey             string
 	oauthCfg           *oauth2.Config
 	sessionKey         []byte
+	appEnv             string
 	claudeRunnerURL    string
 	githubRepoField    string
 	githubBaseField    string
@@ -46,10 +47,11 @@ type jiraSessionClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJira(client *pkgjira.Client, apiKey string, googleCfg config.GoogleOAuth, claudeRunnerURL, githubRepoField, githubBaseField, githubFeatureField string) *Jira {
+func NewJira(client *pkgjira.Client, apiKey string, googleCfg config.GoogleOAuth, appEnv, claudeRunnerURL, githubRepoField, githubBaseField, githubFeatureField string) *Jira {
 	h := &Jira{
 		client:             client,
 		apiKey:             apiKey,
+		appEnv:             appEnv,
 		claudeRunnerURL:    claudeRunnerURL,
 		githubRepoField:    githubRepoField,
 		githubBaseField:    githubBaseField,
@@ -113,6 +115,13 @@ func (h *Jira) GetTicketDetail(ctx *fiber.Ctx) error {
 }
 
 func (h *Jira) ExecuteClaudeRunner(ctx *fiber.Ctx) error {
+	if strings.ToLower(h.appEnv) != "local" {
+		return ctx.Status(fiber.StatusForbidden).JSON(map[string]interface{}{
+			"success": false,
+			"message": "You are not allowed to perform this action",
+		})
+	}
+
 	if h.claudeRunnerURL == "" {
 		return ctx.Status(fiber.StatusServiceUnavailable).JSON(map[string]interface{}{
 			"success": false,
