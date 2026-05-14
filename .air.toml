@@ -1,0 +1,12 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/server ./cmd/server"
+bin = "tmp/server"
+full_bin = "mkdir -p ./storage/logs && ./tmp/server 2>&1 | tee ./storage/logs/app.log"
+
+[log]
+color = true
+timestamp = true

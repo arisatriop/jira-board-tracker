@@ -1,0 +1,17 @@
+config.yaml
+credentials/*
+oauth-token.json
+storage/*
+
+*.env
+*.local*
+
+bin
+
+tmp
+
+.swagger/
+
+# .air.toml
+
+*.session.sql
