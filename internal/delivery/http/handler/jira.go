@@ -2757,7 +2757,7 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
       var streamDot = document.getElementById('stream-dot');
       var logProg   = document.getElementById('log-progress');
       var cursorEl  = null;
-      var source    = new EventSource(runnerURL + '/api/executions/' + execID + '/logs');
+      var source    = new EventSource('/jira/executions/' + execID + '/logs');
 
       function stripAnsi(s) {
         return s.replace(/\x1b\[[0-9;]*[mGKHF]/g, '');
@@ -2765,9 +2765,9 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
 
       function lineClass(text) {
         var t = text.toLowerCase();
-        if ((/✗|failed|fatal/.test(t)) || (/\berror/.test(t) && !/\bno errors?\b/.test(t))) return 'log-err';
+        if (/✓|success|done|completed|passed|\bno errors?\b/.test(t)) return 'log-ok';
+        if (/✗|\bfailed\b|\bfatal\b|error:|err:|\^error/.test(t)) return 'log-err';
         if (/warn(ing)?/.test(t))                     return 'log-warn';
-        if (/✓|success|done|completed|passed/.test(t)) return 'log-ok';
         if (/^(debug|\s*\/\/)/.test(t))               return 'log-dim';
         if (/^\s*(\$|>)\s/.test(text))                return 'log-cmd';
         return '';
@@ -2775,10 +2775,12 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
 
       function appendLine(text) {
         if (cursorEl) { logEl.removeChild(cursorEl); cursorEl = null; }
+        var stripped = stripAnsi(text);
         var line = document.createElement('div');
-        var cls  = lineClass(text);
+        var cls  = lineClass(stripped);
+        console.log('[log]', JSON.stringify(stripped), '->', cls);
         line.className = 'log-line' + (cls ? ' ' + cls : '');
-        line.textContent = stripAnsi(text);
+        line.textContent = stripped;
         logEl.appendChild(line);
         cursorEl = document.createElement('div');
         cursorEl.className = 'log-cursor';
@@ -3023,20 +3025,22 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
 
       function lineClass(text) {
         var t = text.toLowerCase();
-        if (/error|✗|failed|fatal/.test(t))           return 'log-err';
-        if (/warn(ing)?/.test(t))                      return 'log-warn';
-        if (/✓|success|done|completed|passed/.test(t)) return 'log-ok';
-        if (/^(debug|\s*\/\/)/.test(t))                return 'log-dim';
-        if (/^\s*(\$|>)\s/.test(text))                 return 'log-cmd';
+        if (/✓|success|done|completed|passed|\bno errors?\b/.test(t)) return 'log-ok';
+        if (/✗|\bfailed\b|\bfatal\b|error:|err:|\^error/.test(t))    return 'log-err';
+        if (/warn(ing)?/.test(t))                                      return 'log-warn';
+        if (/^(debug|\s*\/\/)/.test(t))                                return 'log-dim';
+        if (/^\s*(\$|>)\s/.test(text))                                 return 'log-cmd';
         return '';
       }
 
       function appendLine(text) {
         if (cursorEl) { logEl.removeChild(cursorEl); cursorEl = null; }
+        var stripped = stripAnsi(text);
         var line = document.createElement('div');
-        var cls  = lineClass(text);
+        var cls  = lineClass(stripped);
+        console.log('[log]', JSON.stringify(stripped), '->', cls);
         line.className = 'log-line' + (cls ? ' ' + cls : '');
-        line.textContent = stripAnsi(text);
+        line.textContent = stripped;
         logEl.appendChild(line);
         cursorEl = document.createElement('div');
         cursorEl.className = 'log-cursor';
@@ -3057,7 +3061,7 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
         logStatus.textContent = msg;
       }
 
-      var source = new EventSource(runnerURL + '/api/executions/' + execID + '/logs');
+      var source = new EventSource('/jira/executions/' + execID + '/logs');
       currentSource = source;
 
       source.addEventListener('log', function(e) {

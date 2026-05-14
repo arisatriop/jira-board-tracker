@@ -137,6 +137,7 @@ func (r *RouteRegistry) Register() {
 	jiraView.Get("/executions/ticket/:key", r.Wired.Handlers.Jira.TicketExecutionsView)
 	jiraView.Get("/executions/:id", r.Wired.Handlers.Jira.ExecutionDetailView)
 	jiraView.Get("/executions/:id/data", r.Wired.Handlers.Jira.GetExecutionData)
+	jiraView.Get("/executions/:id/logs", r.Wired.Handlers.Jira.StreamExecutionLogs)
 	jiraView.Get("/ticket/:key", r.Wired.Handlers.Jira.GetTicketDetail)
 
 	if strings.ToLower(r.App.Config.App.Env) != "production" {
