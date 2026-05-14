@@ -2620,7 +2620,7 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
       0%%   { transform: translateX(-100%%); }
       100%% { transform: translateX(500%%); }
     }
-    .log-line { animation: log-fade-in 0.12s ease-out both; line-height: 1.6; }
+    .log-line { animation: log-fade-in 0.12s ease-out both; line-height: 1.6; margin-bottom: 1em; }
     .log-cursor::after {
       content: '...';
       display: inline-block;
@@ -2691,7 +2691,7 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
       <div id="log-progress" class="hidden relative h-0.5 bg-gray-200 dark:bg-gray-800 overflow-hidden">
         <div class="log-bar-inner absolute inset-y-0 left-0 w-1/4 bg-violet-500 rounded-full"></div>
       </div>
-      <div id="log-area" class="font-mono text-xs text-green-400 bg-gray-950 p-4 h-[32rem] overflow-y-auto leading-relaxed m-0"></div>
+      <div id="log-area" class="font-mono text-xs text-gray-100 bg-gray-950 p-4 h-[32rem] overflow-y-auto leading-relaxed m-0"></div>
     </div>
 
   </div>
@@ -2756,7 +2756,7 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
 
       function lineClass(text) {
         var t = text.toLowerCase();
-        if (/error|✗|failed|fatal/.test(t))          return 'log-err';
+        if ((/✗|failed|fatal/.test(t)) || (/\berror/.test(t) && !/\bno errors?\b/.test(t))) return 'log-err';
         if (/warn(ing)?/.test(t))                     return 'log-warn';
         if (/✓|success|done|completed|passed/.test(t)) return 'log-ok';
         if (/^(debug|\s*\/\/)/.test(t))               return 'log-dim';
@@ -2791,6 +2791,7 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
       }
 
       source.addEventListener('log', function(e) {
+        if (/^tool:\s+\S+\s*$/.test(stripAnsi(e.data).trim())) return;
         startStreaming();
         appendLine(e.data);
       });
@@ -2857,7 +2858,7 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
       0%%   { transform: translateX(-100%%); }
       100%% { transform: translateX(500%%); }
     }
-    .log-line { animation: log-fade-in 0.12s ease-out both; line-height: 1.6; }
+    .log-line { animation: log-fade-in 0.12s ease-out both; line-height: 1.6; margin-bottom: 1em; }
     .log-cursor::after {
       content: '...';
       display: inline-block;
@@ -3051,6 +3052,7 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
       currentSource = source;
 
       source.addEventListener('log', function(e) {
+        if (/^tool:\s+\S+\s*$/.test(stripAnsi(e.data).trim())) return;
         startStreaming();
         appendLine(e.data);
       });
