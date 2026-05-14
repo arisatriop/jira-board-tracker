@@ -2023,6 +2023,7 @@ var remainingTemplate = `<!DOCTYPE html>
           </div>
         </div>
         <div id="claude-fetch-error" class="hidden rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400"></div>
+        <div id="claude-inprogress" class="hidden rounded-xl border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-3 text-sm text-yellow-700 dark:text-yellow-400"></div>
         <div id="claude-result" class="hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 text-sm text-gray-800 dark:text-gray-200 max-h-48 overflow-y-auto whitespace-pre-wrap"></div>
         <div id="claude-error" class="hidden rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400"></div>
       </div>
@@ -2314,6 +2315,8 @@ var remainingTemplate = `<!DOCTYPE html>
     return (d.innerText || d.textContent || '').trim();
   }
 
+  var _activeStatuses = ['pending', 'queued', 'cloning', 'running'];
+
   function openClaudeModal(btn) {
     _claudeTicketKey = btn.dataset.key || '';
     _claudeTicketDetail = {};
@@ -2322,37 +2325,59 @@ var remainingTemplate = `<!DOCTYPE html>
     document.getElementById('claude-result').classList.add('hidden');
     document.getElementById('claude-error').classList.add('hidden');
     document.getElementById('claude-fetch-error').classList.add('hidden');
+    document.getElementById('claude-inprogress').classList.add('hidden');
     document.getElementById('claude-ticket-fields').classList.add('hidden');
     document.getElementById('claude-loading').classList.remove('hidden');
     document.getElementById('claude-submit').disabled = true;
     document.getElementById('claude-modal').classList.remove('hidden');
 
-    fetch('/jira/ticket/' + _claudeTicketKey)
-      .then(function(res) { return res.json(); })
-      .then(function(res) {
-        document.getElementById('claude-loading').classList.add('hidden');
-        if (!res.success) { throw new Error(res.message || 'Failed to load ticket'); }
-        var d = res.data;
-        _claudeTicketDetail = d;
-        document.getElementById('claude-field-summary').value  = d.summary || '';
-        document.getElementById('claude-field-type').value     = d.type || '';
-        document.getElementById('claude-field-priority').value = d.priority || '';
-        document.getElementById('claude-field-sp').value       = d.story_points || '—';
-        document.getElementById('claude-field-assignee').value = d.assignee || 'Unassigned';
-        document.getElementById('claude-field-repo').value     = d.github_repo || '';
-        document.getElementById('claude-field-base').value     = d.github_base || '';
-        document.getElementById('claude-field-feature').value  = d.github_feature || _claudeTicketKey;
-        var descEl = document.getElementById('claude-field-description');
-        descEl.innerHTML = d.description || '<span class="text-gray-400 italic">No description</span>';
-        document.getElementById('claude-ticket-fields').classList.remove('hidden');
+    Promise.all([
+      fetch('/jira/ticket/' + _claudeTicketKey).then(function(r) { return r.json(); }),
+      fetch('/jira/executions?ticketId=' + _claudeTicketKey).then(function(r) { return r.json(); }).catch(function() { return []; })
+    ]).then(function(results) {
+      var ticketRes  = results[0];
+      var executions = Array.isArray(results[1]) ? results[1] : [];
+
+      document.getElementById('claude-loading').classList.add('hidden');
+
+      var inProgress = null;
+      for (var i = 0; i < executions.length; i++) {
+        if (_activeStatuses.indexOf(executions[i].status) !== -1) {
+          inProgress = executions[i];
+          break;
+        }
+      }
+
+      if (inProgress) {
+        var ipEl = document.getElementById('claude-inprogress');
+        ipEl.innerHTML = 'An execution is already in progress (<strong>' + inProgress.status + '</strong>). ' +
+          '<a href="/jira/executions/' + inProgress.id + '?boardId=' + _claudeBoardID + '" class="underline font-medium">View logs →</a>';
+        ipEl.classList.remove('hidden');
+      }
+
+      if (!ticketRes.success) { throw new Error(ticketRes.message || 'Failed to load ticket'); }
+      var d = ticketRes.data;
+      _claudeTicketDetail = d;
+      document.getElementById('claude-field-summary').value  = d.summary || '';
+      document.getElementById('claude-field-type').value     = d.type || '';
+      document.getElementById('claude-field-priority').value = d.priority || '';
+      document.getElementById('claude-field-sp').value       = d.story_points || '—';
+      document.getElementById('claude-field-assignee').value = d.assignee || 'Unassigned';
+      document.getElementById('claude-field-repo').value     = d.github_repo || '';
+      document.getElementById('claude-field-base').value     = d.github_base || '';
+      document.getElementById('claude-field-feature').value  = d.github_feature || _claudeTicketKey;
+      var descEl = document.getElementById('claude-field-description');
+      descEl.innerHTML = d.description || '<span class="text-gray-400 italic">No description</span>';
+      document.getElementById('claude-ticket-fields').classList.remove('hidden');
+      if (!inProgress) {
         document.getElementById('claude-submit').disabled = false;
-      })
-      .catch(function(err) {
-        document.getElementById('claude-loading').classList.add('hidden');
-        document.getElementById('claude-fetch-error').textContent = 'Could not load ticket detail: ' + err.message;
-        document.getElementById('claude-fetch-error').classList.remove('hidden');
-        document.getElementById('claude-submit').disabled = false;
-      });
+      }
+    })
+    .catch(function(err) {
+      document.getElementById('claude-loading').classList.add('hidden');
+      document.getElementById('claude-fetch-error').textContent = 'Could not load ticket detail: ' + err.message;
+      document.getElementById('claude-fetch-error').classList.remove('hidden');
+    });
   }
 
   function closeClaudeModal() {
@@ -2582,6 +2607,35 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
       }
     })();
   </script>
+  <style>
+    @keyframes log-fade-in {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cursor-blink {
+      0%%, 100%% { opacity: 0; }
+      50%%        { opacity: 1; }
+    }
+    @keyframes bar-slide {
+      0%%   { transform: translateX(-100%%); }
+      100%% { transform: translateX(500%%); }
+    }
+    .log-line { animation: log-fade-in 0.12s ease-out both; line-height: 1.6; }
+    .log-cursor::after {
+      content: '...';
+      display: inline-block;
+      animation: cursor-blink 1.2s ease-in-out infinite;
+      color: #a78bfa;
+      margin-left: 2px;
+      letter-spacing: 1px;
+    }
+    .log-bar-inner { animation: bar-slide 1.6s linear infinite; }
+    .log-err  { color: #f87171; }
+    .log-warn { color: #fbbf24; }
+    .log-ok   { color: #34d399; }
+    .log-dim  { color: #6b7280; }
+    .log-cmd  { color: #60a5fa; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">
   <div class="max-w-4xl mx-auto px-4 py-8">
@@ -2628,10 +2682,16 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
     <!-- Log area -->
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-sm font-medium">Logs</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-medium">Logs</h2>
+          <span id="stream-dot" class="hidden w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
+        </div>
         <span id="log-status" class="text-xs text-gray-400">Connecting…</span>
       </div>
-      <pre id="log-area" class="font-mono text-xs text-green-400 bg-gray-950 p-4 h-[32rem] overflow-y-auto whitespace-pre-wrap leading-relaxed m-0"></pre>
+      <div id="log-progress" class="hidden relative h-0.5 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+        <div class="log-bar-inner absolute inset-y-0 left-0 w-1/4 bg-violet-500 rounded-full"></div>
+      </div>
+      <div id="log-area" class="font-mono text-xs text-green-400 bg-gray-950 p-4 h-[32rem] overflow-y-auto leading-relaxed m-0"></div>
     </div>
 
   </div>
@@ -2683,22 +2743,65 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
     }
 
     function startLogs() {
-      var logEl = document.getElementById('log-area');
+      var logEl     = document.getElementById('log-area');
       var logStatus = document.getElementById('log-status');
-      var source = new EventSource(runnerURL + '/api/executions/' + execID + '/logs');
+      var streamDot = document.getElementById('stream-dot');
+      var logProg   = document.getElementById('log-progress');
+      var cursorEl  = null;
+      var source    = new EventSource(runnerURL + '/api/executions/' + execID + '/logs');
+
+      function stripAnsi(s) {
+        return s.replace(/\x1b\[[0-9;]*[mGKHF]/g, '');
+      }
+
+      function lineClass(text) {
+        var t = text.toLowerCase();
+        if (/error|✗|failed|fatal/.test(t))          return 'log-err';
+        if (/warn(ing)?/.test(t))                     return 'log-warn';
+        if (/✓|success|done|completed|passed/.test(t)) return 'log-ok';
+        if (/^(debug|\s*\/\/)/.test(t))               return 'log-dim';
+        if (/^\s*(\$|>)\s/.test(text))                return 'log-cmd';
+        return '';
+      }
+
+      function appendLine(text) {
+        if (cursorEl) { logEl.removeChild(cursorEl); cursorEl = null; }
+        var line = document.createElement('div');
+        var cls  = lineClass(text);
+        line.className = 'log-line' + (cls ? ' ' + cls : '');
+        line.textContent = stripAnsi(text);
+        logEl.appendChild(line);
+        cursorEl = document.createElement('div');
+        cursorEl.className = 'log-cursor';
+        logEl.appendChild(cursorEl);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function startStreaming() {
+        streamDot.classList.remove('hidden');
+        logProg.classList.remove('hidden');
+        logStatus.textContent = 'Streaming…';
+      }
+
+      function stopStreaming(msg) {
+        streamDot.classList.add('hidden');
+        logProg.classList.add('hidden');
+        if (cursorEl) { logEl.removeChild(cursorEl); cursorEl = null; }
+        logStatus.textContent = msg;
+      }
 
       source.addEventListener('log', function(e) {
-        logEl.textContent += e.data + '\n';
-        logEl.scrollTop = logEl.scrollHeight;
+        startStreaming();
+        appendLine(e.data);
       });
 
       source.addEventListener('status', function(e) {
         setStatus(e.data);
         if (e.data === 'done' || e.data === 'failed') {
           source.close();
-          logStatus.textContent = e.data === 'done' ? 'Completed' : 'Failed';
+          stopStreaming(e.data === 'done' ? 'Completed' : 'Failed');
         } else {
-          logStatus.textContent = 'Streaming…';
+          startStreaming();
         }
       });
 
@@ -2708,7 +2811,7 @@ var jiraExecutionTemplate = `<!DOCTYPE html>
 
       source.onerror = function() {
         source.close();
-        logStatus.textContent = 'Stream ended.';
+        stopStreaming('Stream ended.');
       };
     }
 
@@ -2741,6 +2844,35 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
       }
     })();
   </script>
+  <style>
+    @keyframes log-fade-in {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cursor-blink {
+      0%%, 100%% { opacity: 0; }
+      50%%        { opacity: 1; }
+    }
+    @keyframes bar-slide {
+      0%%   { transform: translateX(-100%%); }
+      100%% { transform: translateX(500%%); }
+    }
+    .log-line { animation: log-fade-in 0.12s ease-out both; line-height: 1.6; }
+    .log-cursor::after {
+      content: '...';
+      display: inline-block;
+      animation: cursor-blink 1.2s ease-in-out infinite;
+      color: #a78bfa;
+      margin-left: 2px;
+      letter-spacing: 1px;
+    }
+    .log-bar-inner { animation: bar-slide 1.6s linear infinite; }
+    .log-err  { color: #f87171; }
+    .log-warn { color: #fbbf24; }
+    .log-ok   { color: #34d399; }
+    .log-dim  { color: #6b7280; }
+    .log-cmd  { color: #60a5fa; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">
   <div class="max-w-4xl mx-auto px-4 py-8">
@@ -2795,10 +2927,16 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
       <!-- Log area -->
       <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-sm font-medium">Logs</h2>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-medium">Logs</h2>
+            <span id="stream-dot" class="hidden w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
+          </div>
           <span id="log-status" class="text-xs text-gray-400">Connecting…</span>
         </div>
-        <pre id="log-area" class="font-mono text-xs text-green-400 bg-gray-950 p-4 h-[32rem] overflow-y-auto whitespace-pre-wrap leading-relaxed m-0"></pre>
+        <div id="log-progress" class="hidden relative h-0.5 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+          <div class="log-bar-inner absolute inset-y-0 left-0 w-1/4 bg-violet-500 rounded-full"></div>
+        </div>
+        <div id="log-area" class="font-mono text-xs text-gray-100 bg-gray-950 p-4 h-[32rem] overflow-y-auto leading-relaxed m-0"></div>
       </div>
 
     </div>
@@ -2860,26 +2998,70 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
       setStatus(exec.status || 'unknown');
       if (exec.prUrl) showPRURL(exec.prUrl);
 
-      var logEl = document.getElementById('log-area');
+      var logEl     = document.getElementById('log-area');
       var logStatus = document.getElementById('log-status');
-      logEl.textContent = '';
+      var streamDot = document.getElementById('stream-dot');
+      var logProg   = document.getElementById('log-progress');
+      var cursorEl  = null;
+
+      logEl.innerHTML = '';
       logStatus.textContent = 'Connecting…';
+
+      function stripAnsi(s) {
+        return s.replace(/\x1b\[[0-9;]*[mGKHF]/g, '');
+      }
+
+      function lineClass(text) {
+        var t = text.toLowerCase();
+        if (/error|✗|failed|fatal/.test(t))           return 'log-err';
+        if (/warn(ing)?/.test(t))                      return 'log-warn';
+        if (/✓|success|done|completed|passed/.test(t)) return 'log-ok';
+        if (/^(debug|\s*\/\/)/.test(t))                return 'log-dim';
+        if (/^\s*(\$|>)\s/.test(text))                 return 'log-cmd';
+        return '';
+      }
+
+      function appendLine(text) {
+        if (cursorEl) { logEl.removeChild(cursorEl); cursorEl = null; }
+        var line = document.createElement('div');
+        var cls  = lineClass(text);
+        line.className = 'log-line' + (cls ? ' ' + cls : '');
+        line.textContent = stripAnsi(text);
+        logEl.appendChild(line);
+        cursorEl = document.createElement('div');
+        cursorEl.className = 'log-cursor';
+        logEl.appendChild(cursorEl);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function startStreaming() {
+        streamDot.classList.remove('hidden');
+        logProg.classList.remove('hidden');
+        logStatus.textContent = 'Streaming…';
+      }
+
+      function stopStreaming(msg) {
+        streamDot.classList.add('hidden');
+        logProg.classList.add('hidden');
+        if (cursorEl) { logEl.removeChild(cursorEl); cursorEl = null; }
+        logStatus.textContent = msg;
+      }
 
       var source = new EventSource(runnerURL + '/api/executions/' + execID + '/logs');
       currentSource = source;
 
       source.addEventListener('log', function(e) {
-        logEl.textContent += e.data + '\n';
-        logEl.scrollTop = logEl.scrollHeight;
+        startStreaming();
+        appendLine(e.data);
       });
 
       source.addEventListener('status', function(e) {
         setStatus(e.data);
         if (e.data === 'done' || e.data === 'failed') {
           source.close(); currentSource = null;
-          logStatus.textContent = e.data === 'done' ? 'Completed' : 'Failed';
+          stopStreaming(e.data === 'done' ? 'Completed' : 'Failed');
         } else {
-          logStatus.textContent = 'Streaming…';
+          startStreaming();
         }
       });
 
@@ -2887,7 +3069,7 @@ var jiraTicketExecutionsTemplate = `<!DOCTYPE html>
 
       source.onerror = function() {
         source.close(); currentSource = null;
-        logStatus.textContent = 'Stream ended.';
+        stopStreaming('Stream ended.');
       };
     }
 
